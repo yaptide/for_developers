@@ -26,7 +26,7 @@ plugins:
     enable_inventory: true
     handlers:
       python:
-        paths: [yaptide]
+        paths: [for_developers]
         options:
           show_if_no_docstring: true
           line_numbers: true
