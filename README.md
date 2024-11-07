@@ -1,1 +1,1 @@
-# for_developers
+# Yaptide developer documentation
