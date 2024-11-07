@@ -21,9 +21,6 @@ plugins:
 - literate-nav:
     nav_file: SUMMARY.md
 - section-index
-- coverage:
-    page_name: coverage
-    html_report_dir: htmlcov
 - render_swagger
 - mkdocstrings:
     enable_inventory: true
