@@ -12,9 +12,22 @@ theme:
 nav:
 - Backend:
   - Overview: backend/index.md
+  - For developers: backend/for_developers.md
+  - Using docker: backend/using_docker.md
+  - API: backend/swagger.md
+  - Jobs and tasks: backend/states.md
+  - Persistent storage: backend/persistency.md
+  - Docker images on GHCR: backend/ghcr_packages.md
 - Frontend:
   - Overview: frontend/index.md
-- Editing documentation: other/index.md
+  - For developers: frontend/for_developers.md
+  - Examples: frontend/examples.md
+  - Authentication: frontend/authentication.md 
+  - Examples: frontend/examples.md
+- Converter:
+  - Overview: converter/index.md
+  - Readme: converter/readme.md
+- Editing documentation: documentation/index.md
 
 plugins:
 - search
