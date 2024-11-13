@@ -43,6 +43,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
             python-version: '3.12'
+      - name: Temporarily rename pyproject from for_developers
+        run: |
+          mv pyproject.toml pyproject_docs.toml
+          mv poetry.lock poetry_docs.lock
       - name: Clone backend repo
         uses: actions/checkout@v4
         with:
@@ -54,10 +58,6 @@ jobs:
             yaptide_tester/
             pyproject.toml
             poetry.lock
-      - name: Temporarily rename pyproject from for_developers
-        run: |
-          mv pyproject.toml pyproject_docs.toml
-          mv poetry.lock poetry_docs.lock
       - name: move yaptide and tests to root dir wiht dependencies specification
         run: |
           mv backend_repository/yaptide backend_repository/tests backend_repository/yaptide_tester backend_repository/pyproject.toml backend_repository/poetry.lock .
