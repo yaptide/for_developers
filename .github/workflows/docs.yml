@@ -41,7 +41,7 @@ jobs:
       - name: Clone backend repo
         uses: actions/checkout@v4
         with:
-          reporsitory: 'yaptide/yaptide'
+          repository: 'yaptide/yaptide'
       - name: Update pip and install poetry
         run: |
           python3 -m pip install --upgrade pip
