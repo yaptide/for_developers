@@ -51,6 +51,7 @@ jobs:
           sparse-checkout: |
             yaptide/
             tests/
+            yaptide_tester/
             pyproject.toml
             poetry.lock
       - name: Temporarily rename pyproject from for_developers
@@ -59,7 +60,7 @@ jobs:
           mv poetry.lock poetry_docs.lock
       - name: move yaptide and tests to root dir wiht dependencies specification
         run: |
-          mv backend_repository/yaptide backend_repository/tests backend_repository/pyproject.toml backend_repository/poetry.lock .
+          mv backend_repository/yaptide backend_repository/tests backend_repository/yaptide_tester backend_repository/pyproject.toml backend_repository/poetry.lock .
           rm -rf backend_repository
       - name: Update pip and install poetry
         run: |
