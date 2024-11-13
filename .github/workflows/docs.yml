@@ -47,8 +47,7 @@ jobs:
             yaptide/
             tests/
       - name: move yaptide and tests to root dir
-        run: |
-          mv backend_repository/yaptide backend_repository/tests ..
+        run: mv backend_repository/yaptide backend_repository/tests .
       - name: Update pip and install poetry
         run: |
           python3 -m pip install --upgrade pip
