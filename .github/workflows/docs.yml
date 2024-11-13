@@ -34,6 +34,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -46,12 +48,44 @@ jobs:
           sparse-checkout: |
             yaptide/
             tests/
-      - name: move yaptide and tests to root dir
-        run: mv backend_repository/yaptide backend_repository/tests .
+            pyproject.toml
+            poetry.lock
+      - name: Temporarily rename pyproject from for_developers
+        run: |
+          mv pyproject.toml pyproject_docs.toml
+          mv poetry.lock poetry_docs.lock
+      - name: move yaptide and tests to root dir wiht dependencies specification
+        run: |
+          mv backend_repository/yaptide backend_repository/tests backend_repository/pyproject.toml backend_repository/poetry.lock .
+          rmdir backend_repository
       - name: Update pip and install poetry
         run: |
           python3 -m pip install --upgrade pip
           pip install poetry
+      - name: Install dependencies for production
+        run: poetry install --only main
+      - name: Install dependencies for tests
+        run: poetry install --only test
+      - name: Run tests
+        env:
+            S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+            S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+            S3_ENCRYPTION_PASSWORD: ${{ secrets.S3_ENCRYPTION_PASSWORD }}
+            S3_ENCRYPTION_SALT: ${{ secrets.S3_ENCRYPTION_SALT }}
+            S3_SHIELDHIT_BUCKET: ${{ vars.S3_LINUX_SHIELDHIT_BUCKET }}
+            S3_SHIELDHIT_KEY: ${{ vars.S3_LINUX_SHIELDHIT_KEY }}
+        run: poetry run pytest --cov-report html:htmlcov --cov=yaptide
+      
+
+      - name: Remove unused pyproject and dependencies
+        run: | 
+          rm -r .venv
+          rm pyproject.toml
+          rm poetry.lock
+      - name: Bring back original dependencies
+        run: | 
+          mv pyproject_docs.toml pyproject.toml
+          mv poetry_docs.lock poetry.lock
       - name: Install dependencies for documentation
         run: poetry install
       - name: Build site
