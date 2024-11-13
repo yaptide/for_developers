@@ -460,7 +460,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateJobs'
+              $ref: '#/components/schemas/UpdateJob'
       responses:
         '202':
           description: Simulation updated
