@@ -60,7 +60,7 @@ jobs:
       - name: move yaptide and tests to root dir wiht dependencies specification
         run: |
           mv backend_repository/yaptide backend_repository/tests backend_repository/pyproject.toml backend_repository/poetry.lock .
-          rmdir backend_repository
+          rmdir -r backend_repository
       - name: Update pip and install poetry
         run: |
           python3 -m pip install --upgrade pip
