@@ -58,6 +58,7 @@ jobs:
             yaptide_tester/
             pyproject.toml
             poetry.lock
+            pytest.ini
       - name: move yaptide and tests to root dir wiht dependencies specification
         run: |
           mv backend_repository/yaptide .
@@ -65,6 +66,7 @@ jobs:
           mv backend_repository/yaptide_tester .
           mv backend_repository/pyproject.toml .
           mv backend_repository/poetry.lock .
+          mv backend_repository/pytest.ini .
       - name: Update pip and install poetry
         run: |
           python3 -m pip install --upgrade pip
