@@ -42,9 +42,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'yaptide/yaptide'
-          sparse-checkout: 
-            - 'yaptide'
-            - 'tests'
+          sparse-checkout: |
+            yaptide
+            tests
       - name: Update pip and install poetry
         run: |
           python3 -m pip install --upgrade pip
