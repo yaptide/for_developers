@@ -19,7 +19,7 @@ nav:
   - Persistent storage: backend/persistency.md
   - Docker images on GHCR: backend/ghcr_packages.md
   - Test coverage: backend/coverage.md
-- Code Reference: reference/
+  - Code Reference: reference/
 - Frontend:
   - Overview: frontend/index.md
   - For developers: frontend/for_developers.md
