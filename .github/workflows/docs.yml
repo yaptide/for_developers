@@ -43,8 +43,8 @@ jobs:
         with:
           repository: 'yaptide/yaptide'
           sparse-checkout: |
-            yaptide
-            tests
+            yaptide/
+            tests/
       - name: Update pip and install poetry
         run: |
           python3 -m pip install --upgrade pip
