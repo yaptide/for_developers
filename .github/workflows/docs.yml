@@ -88,7 +88,6 @@ jobs:
 
       - name: Remove unused pyproject and dependencies
         run: | 
-          rm -r .venv
           rm pyproject.toml
           rm poetry.lock
       - name: Bring back original dependencies
@@ -96,7 +95,9 @@ jobs:
           mv pyproject_docs.toml pyproject.toml
           mv poetry_docs.lock poetry.lock
       - name: Install dependencies for documentation
-        run: poetry install
+        run: |
+          poetry lock
+          poetry install
       - name: Build site
         run: mkdocs build
       - name: Setup Pages
