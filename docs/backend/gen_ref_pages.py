@@ -9,7 +9,7 @@ nav = mkdocs_gen_files.Nav()
 for path in sorted(Path("backend","yaptide").rglob("*.py")):
     module_path = path.relative_to("backend","yaptide").with_suffix("")
     doc_path = path.relative_to("backend","yaptide").with_suffix(".md")
-    full_doc_path = Path("reference", doc_path)
+    full_doc_path = Path("backend","reference", doc_path)
 
     parts = tuple(module_path.parts)
 
@@ -24,7 +24,7 @@ for path in sorted(Path("backend","yaptide").rglob("*.py")):
 
     mkdocs_gen_files.set_edit_path(full_doc_path, path)
 
-with mkdocs_gen_files.open("reference/SUMMARY.md", "w") as nav_file:
+with mkdocs_gen_files.open("backend/reference/SUMMARY.md", "w") as nav_file:
     nav_file.writelines(nav.build_literate_nav())
 
 # copy the openapi.yaml file from the flask_static directory to the docs directory
