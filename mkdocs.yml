@@ -18,8 +18,8 @@ nav:
   - Jobs and tasks: backend/states.md
   - Persistent storage: backend/persistency.md
   - Docker images on GHCR: backend/ghcr_packages.md
-  - Code Reference: backend/reference/
   - Test coverage: backend/coverage.md
+- Code Reference: reference/
 - Frontend:
   - Overview: frontend/index.md
   - For developers: frontend/for_developers.md
