@@ -87,7 +87,7 @@ jobs:
           S3_FLUKA_BUCKET: ${{ vars.S3_FLUKA_BUCKET }}
           S3_FLUKA_KEY: ${{ vars.S3_FLUKA_KEY }}
         with:
-          timeout_seconds: 15
+          timeout_minutes: 5
           max_attempts: 3
           retry_on: error
           command: poetry run pytest --cov-report html:htmlcov --cov=yaptide
