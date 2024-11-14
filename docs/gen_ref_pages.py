@@ -29,5 +29,5 @@ with mkdocs_gen_files.open("reference/SUMMARY.md", "w") as nav_file:
 
 # copy the openapi.yaml file from the flask_static directory to the docs directory
 flask_static_openapi_path = Path('yaptide', 'static', 'openapi.yaml')
-mkdocs_openapi_path = Path('docs', 'openapi.yaml')
+mkdocs_openapi_path = Path('docs', 'backend', 'openapi.yaml')
 mkdocs_openapi_path.write_text(flask_static_openapi_path.read_text())
