@@ -84,6 +84,8 @@ jobs:
           S3_ENCRYPTION_SALT: ${{ secrets.S3_ENCRYPTION_SALT }}
           S3_SHIELDHIT_BUCKET: ${{ vars.S3_LINUX_SHIELDHIT_BUCKET }}
           S3_SHIELDHIT_KEY: ${{ vars.S3_LINUX_SHIELDHIT_KEY }}
+          S3_FLUKA_BUCKET: ${{ vars.S3_FLUKA_BUCKET }}
+          S3_FLUKA_KEY: ${{ vars.S3_FLUKA_KEY }}
         with:
           timeout_seconds: 15
           max_attempts: 3
