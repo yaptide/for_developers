@@ -86,7 +86,11 @@ jobs:
         #   S3_SHIELDHIT_KEY: ${{ vars.S3_LINUX_SHIELDHIT_KEY }}
         #   S3_FLUKA_BUCKET: ${{ vars.S3_FLUKA_BUCKET }}
         #   S3_FLUKA_KEY: ${{ vars.S3_FLUKA_KEY }}
-        command: poetry run pytest --cov-report html:htmlcov --cov=yaptide
+        with:
+          timeout_seconds: 15
+          max_attempts: 3
+          retry_on: error
+          command: poetry run pytest --cov-report html:htmlcov --cov=yaptide
       - name: Remove unused pyproject and dependencies
         run: | 
           rm pyproject.toml
