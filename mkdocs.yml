@@ -19,7 +19,7 @@ nav:
   - Overview: backend/index.md
   - For developers: backend/for_developers.md
   - Using docker: backend/using_docker.md
-  - API: swagger.md
+  - API: backend/swagger.md
   - Jobs and tasks: backend/states.md
   - Persistent storage: backend/persistency.md
   - Docker images on GHCR: backend/ghcr_packages.md
