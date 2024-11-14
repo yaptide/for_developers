@@ -90,7 +90,16 @@ jobs:
           timeout_minutes: 15
           max_attempts: 3
           retry_on: error
-          command: poetry run pytest --cov-report html:htmlcov --cov=yaptide
+          command: |
+            export S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }}
+            export S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}
+            export S3_ENCRYPTION_PASSWORD=${{ secrets.S3_ENCRYPTION_PASSWORD }}
+            export S3_ENCRYPTION_SALT=${{ secrets.S3_ENCRYPTION_SALT }}
+            export S3_SHIELDHIT_BUCKET=${{ vars.S3_LINUX_SHIELDHIT_BUCKET }}
+            export S3_SHIELDHIT_KEY=${{ vars.S3_LINUX_SHIELDHIT_KEY }}
+            export S3_FLUKA_BUCKET=${{ vars.S3_FLUKA_BUCKET }}
+            export S3_FLUKA_KEY=${{ vars.S3_FLUKA_KEY }}
+            poetry run pytest --cov-report html:htmlcov --cov=yaptide
       
 
       - name: Remove unused pyproject and dependencies
