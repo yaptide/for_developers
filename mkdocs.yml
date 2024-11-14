@@ -1,4 +1,9 @@
 site_name: Yaptide for developers
+site_url: https://yaptide.github.io/for_developers
+repo_url: https://github.com/yaptide/for_developers
+repo_name: yaptide/for_developers
+copyright: Copyright &copy; 2024 the Yaptide team
+
 theme:
   name: material
   features:
