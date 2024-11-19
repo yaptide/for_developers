@@ -35,6 +35,7 @@ nav:
 - Converter:
   - Overview: converter/index.md
   - Readme: converter/readme.md
+  - Tests: converter/tests.md
 - Editing documentation: documentation/index.md
 
 plugins:
