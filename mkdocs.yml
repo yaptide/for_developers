@@ -31,6 +31,7 @@ nav:
   - Examples: frontend/examples.md
   - Authentication: frontend/authentication.md 
   - Examples: frontend/examples.md
+  - ThreeJs development: frontend/three_editor_development.md
 - Converter:
   - Overview: converter/index.md
   - Readme: converter/readme.md

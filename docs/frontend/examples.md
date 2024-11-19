@@ -1,6 +1,6 @@
 # Examples directory
 
-This directory contains examples of simulation projects for the editor. To add a new example, create a new JSON file in this directory. The naming convention for the file is as follows:
+Directory public/examples in ui repository contains examples of simulation projects for the editor. To add a new example, create a new JSON file in this directory. The naming convention for the file is as follows:
 
 - ex{number of the example}.json
 
