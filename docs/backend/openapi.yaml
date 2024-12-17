@@ -890,7 +890,10 @@ paths:
   /results:
     get:
       summary: Allows getting results of the simulation.
-      description: If `estimator_name` is provided, the response will include results only for that specific estimator, otherwise it will return all estimators for the given job.
+      description: This endpoint retrieves the results of a simulation. If the `estimator_name` parameter is provided,
+        the response will include results only for the specified estimator. If no `estimator_name` is provided,
+        the response will include results for all estimators associated with the job. Additionally, you can
+        specify pages using the `page_number` or `page_numbers` parameter to limit the response to specific pages.
       parameters:
         - in: query
           name: job_id
@@ -904,6 +907,18 @@ paths:
           description: Name of a specific estimator to retrieve results for
           schema:
             type: string
+        - in: query
+          name: page_number
+          required: false
+          description: Retrieve a specific page of results for the specified estimator.
+          schema:
+            type: integer
+        - in: query
+          name: page_numbers
+          required: false
+          description: Retrieve a specific pages of results for the specified estimator. For example, `"1-3,5"` would retrieve pages 1 through 3 and page 5.
+          schema:
+            type: integer
       responses:
         '200':
           description: Includes results of the simulation
@@ -925,6 +940,20 @@ paths:
                         type: string
                       estimator:
                           $ref: '#/components/schemas/Estimator'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                      pages:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Page'
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                      page:
+                          $ref: '#/components/schemas/Page'                  
         '400':
           description: Bad Request - Missing parameters
           content:
@@ -959,17 +988,17 @@ paths:
 # Estimator Routes
   /estimators:
     get:
-      summary: Allows getting names of the estimators for the specific simulation.
+      summary: Allows getting metadata of estimators for a specific simulation.
       parameters:
         - in: query
           name: job_id
           required: true
-          description: ID of the job to retrieve results for
+          description: ID of the job to estimators metadata results for
           schema:
             type: string
       responses:
         '200':
-          description: Includes estimator names
+          description: Includes estimator metadata
           content:
             application/json:
               schema:
@@ -977,10 +1006,24 @@ paths:
                 properties:
                   message:
                     type: string
-                  estimator_names:
+                  estimators_metadata:
                     type: array
                     items:
-                      type: string
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        pages_metadata:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              page_number:
+                                type: integer
+                              page_name:
+                                type: string
+                              page_dimension:
+                                type: integer
         '400':
           description: Bad Request - Missing parameters
           content:
@@ -1334,6 +1377,9 @@ components:
         task_state:
           type: string
           enum: [PENDING, RUNNING, COMPLETED, FAILED]
+    Page: 
+      type: object
+      description: Page object
     Estimator:
       type: object
       description: Estimator object includes estimator's name, associated metadata, and list of pages.
@@ -1348,8 +1394,7 @@ components:
           type: array
           description: List of pages
           items:
-            type: object
-            description: Page object
+            $ref: '#/components/schemas/Page'
     UpdateJobs:
       type: object
       required:

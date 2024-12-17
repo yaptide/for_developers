@@ -69,14 +69,17 @@ classDiagram
     id: int
     simulation_id: int
     name: str
+    file_name: str
     compressed_data: bytes
     data
   }
 
   class PageModel {
     id: int
+    page_name: str
     estimator_id: int
     page_number: int
+    page_dimension: int
     compressed_data: bytes
     data
   }
