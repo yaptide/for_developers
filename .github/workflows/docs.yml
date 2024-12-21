@@ -22,9 +22,6 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
-env:
-  S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
-
 jobs:
   # Single deploy job since we're just deploying
   deploy:
@@ -75,17 +72,11 @@ jobs:
         run: poetry install --only main
       - name: Install dependencies for tests
         run: poetry install --only test
+      - name: Get demo simulators for Linux
+        run: poetry run python yaptide/admin/simulators.py download-shieldhit --dir bin/
+        timeout-minutes: 2
       - name: Run tests
         uses: nick-fields/retry@v3
-        env:
-          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
-          S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
-          S3_ENCRYPTION_PASSWORD: ${{ secrets.S3_ENCRYPTION_PASSWORD }}
-          S3_ENCRYPTION_SALT: ${{ secrets.S3_ENCRYPTION_SALT }}
-          S3_SHIELDHIT_BUCKET: ${{ vars.S3_LINUX_SHIELDHIT_BUCKET }}
-          S3_SHIELDHIT_KEY: ${{ vars.S3_LINUX_SHIELDHIT_KEY }}
-          S3_FLUKA_BUCKET: ${{ vars.S3_FLUKA_BUCKET }}
-          S3_FLUKA_KEY: ${{ vars.S3_FLUKA_KEY }}
         with:
           timeout_minutes: 25
           max_attempts: 10
