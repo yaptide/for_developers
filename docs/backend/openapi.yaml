@@ -993,12 +993,12 @@ paths:
         - in: query
           name: job_id
           required: true
-          description: ID of the job to estimators metadata results for
+          description: ID of the job to retrieve estimators metadata for
           schema:
             type: string
       responses:
         '200':
-          description: Includes estimator metadata
+          description: Includes estimators metadata
           content:
             application/json:
               schema:
