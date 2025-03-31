@@ -184,6 +184,87 @@ You can use the following command, to get more information:
     $env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///instance/db.sqlite"; poetry run yaptide\admin\db_manage.py --help
     ```
 
+## Set up Keycloak
+
+To use SSO login, you need to either connect to a running instance of Keycloak that is configured to allow cross origin requests or set up Keycloak locally.
+The latter is relatively easy to do with docker. The most basic configuration (not suitable for production) is as follows:
+
+1. Start the Keycloak docker container
+
+    ```bash
+    docker run -p 8080:8080 -e KC_HTTP_RELATIVE_PATH=/auth -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=password quay.io/keycloak/keycloak:26.1.4 start-dev
+    ```
+    where `KC_HTTP_RELATIVE_PATH` specifies the prefix for api calls (/auth/foo/bar in this case to match what PLGrid is using),
+    `KC_BOOTSTRAP_ADMIN_USERNAME` and `KC_BOOTSTRAP_ADMIN_PASSWORD` are default admin username and password, respectively.
+
+2. Configure the realm
+
+    The realm is a context in which users and groups exist and are given roles.
+
+    * Navigate to localhost:8080 and login as a default admin. Open the dropdown in the upper left corner
+    which says 'Keycloak / master' and click 'Create realm'.
+    * Specify the realm name (i.e. 'yaptide') and click 'Create'
+    * Now the dropdown should change to 'yaptide' indicating that this is the selected realm
+
+3. Configure the client
+
+    The client is the application that wants to authenticate users via Keycloak.
+
+    * Navigate to 'Clients' and click 'Create client'.
+    * Name the client (i.e. 'yaptide-app'). Only the Client ID is required.
+    * Click 'Next' to go to 'Capability config'. For the purpose of developing, you can leave it as-is and click 'Next' again.
+    * In 'Login settings' fill in all fields with correct URL to your application, otherwise Keycloak will
+    return 4XX HTTP errors on all requests. Change the following to your needs:
+        * Root URL: http://127.0.0.1:3000/
+        * Home URL: http://127.0.0.1:3000/
+        * Valid redirect URIs: http://127.0.0.1:3000/*
+        * Web origins: *
+        * Admin URL: http://127.0.0.1:3000/
+    * Click 'Save'
+
+    **Notice that `localhost` and `127.0.0.1` are NOT interchangeable, use the same URL when you navigate to your app in the browser**
+
+4. Configure the user
+
+    * Navigate to 'Users'
+    * Fill in the form however you like and click 'Create'
+    * After creating the user, in 'User details' page, click the 'Credentials' tab
+    * Click the 'Set password' button, unset the 'Temporary' switch and click 'Save'
+
+5. Add required flags to user token
+
+    Yaptide checks if user token has `plgridAccessServices` field with `PLG_YAPTIDE_ACCESS` flag set. We need to add it.
+    * Navigate to 'Client scopes'
+    * From the list, select 'profile' and go to 'Mappers' tab
+    * Click 'Add mapper' > 'By configuration' > 'User Attribute'
+    * Set 'Name' and 'User Attribute' to **EXACTLY** 'plgrid_access_services'
+    * Set 'Token Claim Name' to **EXACTLY** 'plgridAccessServices'
+    * Click 'Save'
+    * Navigate to 'Realm settings' and set 'Unmanaged Attributes' to 'Enabled' and click 'Save'
+    * Navigate to Users and select your user
+    * Click the 'Attributes' tab. If there is no such tab, ensure the 'Unmanaged Attributes' in 'Realm settings' is enabled
+    * Click 'Add attributes'
+    * Set Key: 'plgrid_access_services' Value: 'PLG_YAPTIDE_ACCESS' and click 'Save'
+
+6. Set environment variables for front-end
+    ```
+    REACT_APP_ALT_AUTH='plg'
+    REACT_APP_KEYCLOAK_BASE_URL='http://127.0.0.1:8080'
+    REACT_APP_KEYCLOAK_REALM='yaptide'
+    REACT_APP_KEYCLOAK_CLIENT_ID='yaptide-app'
+    REACT_APP_BACKEND_URL='http://127.0.0.1:5000'
+    ```
+
+7. Set environment variables for back-end
+    ```
+    KEYCLOAK_BASE_URL='http://127.0.0.1:8080'
+    KEYCLOAK_REALM='yaptide'
+    KEYCLOAK_CLIENT_ID='yaptide-app'
+    ```
+    **Again, make sure to match `127.0.0.1` or `localhost` and use your realm and client id**
+
+8. Restart both back-end and front-end. **Navigate to the correct URL**. 'CONNECT WITH PLGRID' should be enabled. Try logging in. 
+
 ## Testing
 
 To run tests use:

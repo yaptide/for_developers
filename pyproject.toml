@@ -2,6 +2,7 @@
 name = "yaptide developer documentation"
 version = "1.0.0"
 description = "Yaptide Yet Another Particle Transport IDE"
+package-mode = false
 authors = []
 readme = "README.md"
 
