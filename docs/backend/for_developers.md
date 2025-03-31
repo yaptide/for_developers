@@ -222,7 +222,7 @@ The latter is relatively easy to do with docker. The most basic configuration (n
         * Admin URL: http://127.0.0.1:3000/
     * Click 'Save'
 
-    **Notice that `localhost` and `127.0.0.1` is NOT interchangeable, use the same URL when you navigate to your app in the browser**
+    **Notice that `localhost` and `127.0.0.1` are NOT interchangeable, use the same URL when you navigate to your app in the browser**
 
 4. Configure the user
 
