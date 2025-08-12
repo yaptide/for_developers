@@ -33,7 +33,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Setup Python
@@ -45,7 +45,7 @@ jobs:
           mv pyproject.toml pyproject_docs.toml
           mv poetry.lock poetry_docs.lock
       - name: Clone backend repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: 'yaptide/yaptide'
           path: 'backend_repository'
