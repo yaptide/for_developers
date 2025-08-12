@@ -1093,6 +1093,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/BasicResponse'
 
+  #Logs
+  /logs:
+    post:
+      summary: Allows to receive logs from the frontend and save them to database
+      responses:
+        '200':
+          description: Logs received
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicResponse'
 # Logfiles Routes
   /logfiles:
     post:
