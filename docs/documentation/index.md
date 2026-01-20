@@ -47,10 +47,15 @@ First, user needs to install [poetry](https://python-poetry.org).
 
 ### Quick Start Recipe
 
-**Step 1: Clone and navigate to the repository**
+**Step 1: Clone the repository**
 
 ```bash
 git clone https://github.com/yaptide/for_developers.git
+```
+
+Navigate to the repository:
+
+```bash
 cd for_developers
 ```
 
