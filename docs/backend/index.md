@@ -8,6 +8,7 @@ The documenation contains:
 
   * [For developers](for_developers.md) - How to build backend for developers
   * [Using docker](using_docker.md) - How to build backend for deployment using Docker
+  * [Simulator Management](simulator_management.md) - Managing simulation engine binaries with S3 storage
   * [API reference](swagger.md) - (useful for frontend development), auto-generated from swagger yaml
   * [Jobs and tasks](states.md) - Description of states of jobs and task
   * [Persistent storage](persistency.md) - Description of database model
