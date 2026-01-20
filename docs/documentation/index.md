@@ -44,29 +44,41 @@ The deployment includes generation of test coverage report and API reference doc
 ### Prerequisites
 
 First, user needs to install [poetry](https://python-poetry.org).
-Then, user needs to install the dependencies for the backend and the documentation:
+
+### Quick Start Recipe
+
+**Step 1: Clone and navigate to the repository**
 
 ```bash
-poetry install --only main,docs
+git clone https://github.com/yaptide/for_developers.git
+cd for_developers
 ```
 
-### Building the documentation
-
-To build the documentation run the following command:
+**Step 2: Install dependencies**
 
 ```bash
-poetry run mkdocs build
+poetry install
 ```
 
-this will generate the documentation in the `site` folder.
-
-To serve the documentation locally run the following command:
+**Step 3: Serve documentation locally**
 
 ```bash
 poetry run mkdocs serve
 ```
 
-This will start a local webserver on port 8000. The documentation can be viewed by opening the following url in a browser: http://localhost:8000
+This will start a local webserver on port 8000. Open http://localhost:8000 in your browser to view the documentation.
+
+The documentation will automatically reload when you modify markdown files.
+
+### Building the documentation
+
+To build static HTML documentation run:
+
+```bash
+poetry run mkdocs build
+```
+
+This will generate the documentation in the `site` folder.
 
 ### Working with the technical documentation
 

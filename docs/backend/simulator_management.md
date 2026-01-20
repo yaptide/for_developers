@@ -20,8 +20,7 @@ FLUKA is initialized only when `S3_FLUKA_BUCKET` and `S3_FLUKA_KEY` are provided
 
 ## Simulator Management Command Reference
 
-!!! warning "Linux/WSL Required"
-    The simulation binaries are compiled for Linux. All commands should be executed on Linux or within Windows Subsystem for Linux (WSL). Running on native Windows will not work.
+**Note:** The simulation binaries are compiled for Linux. All commands should be executed on Linux or within Windows Subsystem for Linux (WSL). Running on native Windows will not work.
 
 Use the project virtual environment managed by Poetry (see [Backend: For developers](for_developers.md) for installation and activation). The `simulators.py` CLI manages encrypted simulator binaries: it downloads SHIELD-HIT12A (with demo fallback), optionally downloads FLUKA, uploads encrypted artifacts to S3, and provides encrypt/decrypt helpers. Run `--help` to list commands:
 
@@ -40,54 +39,62 @@ poetry run ./yaptide/admin/simulators.py download-shieldhit --help
 
 Most S3 parameters are read from environment variables (see [Environment Variables Configuration](#environment-variables-configuration) below). Run each command with `--help` for full options:
 
-#### Download SHIELD-HIT12A
+#### Download SHIELD-HIT12A from S3 (with demo fallback)
 
-Download SHIELD-HIT12A to the `./download` directory from S3 or fall back to demo version:
+Retrieve the SHIELD-HIT12A binary from S3 storage and decrypt it locally. If S3 is unavailable, the system falls back to the public demo version:
 
 ```bash
 poetry run ./yaptide/admin/simulators.py download-shieldhit --dir ./download --decrypt
 ```
 
-Verify the download:
+Confirm successful download by listing the directory:
 
 ```bash
 ls -lh ./download
 ```
 
-Check version:
+Verify the binary version matches your expectations:
 ```bash
 ./download/shieldhit --version
 ```
 
-See options:
+Optionally validate the binary inside the simulation worker container (mounting read-only at a non-standard path to isolate from production simulators):
+```bash
+docker run --rm -it \
+  -v "$(pwd)/download/shieldhit:/opt/test/shieldhit:ro" \
+  --entrypoint /bin/bash yaptide_simulation_worker \
+  -c "/opt/test/shieldhit --version"
+```
+
+For additional configuration options and parameters:
 
 ```bash
 poetry run ./yaptide/admin/simulators.py download-shieldhit --help
 ```
 
-#### Download FLUKA
+#### Retrieve FLUKA from S3 (encrypted)
 
-Download FLUKA simulator (encrypted, requires S3 credentials):
+Download and decrypt the FLUKA binary from S3 storage. Requires valid S3 credentials configured in `.env`:
 
 ```bash
 poetry run ./yaptide/admin/simulators.py download-fluka --dir ./download
 ```
 
-See options:
+For additional configuration options:
 
 ```bash
 poetry run ./yaptide/admin/simulators.py download-fluka --help
 ```
 
-#### Upload Simulator to S3
+#### Upload Simulator Binary to S3
 
-Upload a compiled binary (optionally encrypted):
+Upload a compiled simulator binary to S3-compatible storage with optional encryption:
 
 ```bash
 poetry run ./yaptide/admin/simulators.py upload --bucket my-bucket --file ./shieldhit --encrypt
 ```
 
-See options:
+For additional configuration options:
 
 ```bash
 poetry run ./yaptide/admin/simulators.py upload --help
@@ -125,63 +132,77 @@ poetry run ./yaptide/admin/simulators.py decrypt --help
 
 ### Uploading a New SHIELD-HIT12A Version
 
-Assume you have compiled a new SHIELD-HIT12A binary and want to upload it to S3 for production use.
+Step-by-step example assuming SHIELD-HIT12A sources live in `$HOME/workspace/shieldhit`.
 
-**Step 1: Compile the binary**
+**1) Compile the binary (from the source dir)**
 
+Enter the source tree:
 ```bash
-./compile_shieldhit.sh
-# Result: ./build/shieldhit (or shieldhit.exe on Windows)
+cd "$HOME/workspace/shieldhit"
 ```
 
-**Step 2: Encrypt the binary**
-
+Compile with gfortran:
 ```bash
-poetry run ./yaptide/admin/simulators.py encrypt \
-  --infile ./build/shieldhit \
-  --outfile ./build/shieldhit.encrypted \
-  --password my-secure-password \
-  --salt my-salt-value
+make gfortran -j
 ```
 
-**Step 3: Upload encrypted binary to S3**
+After build, the binary should be `./shieldhit`. Check its version:
 
+Verify binary version:
+```bash
+./shieldhit --version
+# Expected shape (example):
+# SHIELD-HIT12A
+# Version: v1.1.0-8-g4ea3f147
+# Build date: Tue, 20 Jan 2026 11:28:34 +0100
+# SHIELD-HIT12A is up to date.
+```
+
+Optionally rename to capture host/build metadata (recommended):
+
+```bash
+mv ./shieldhit ./shieldhit-lenovo-dev-g12fd3b8c-make-gfortran
+```
+
+**2) Upload to S3 with encryption (run from project root `yaptide/`)**
+
+Switch to project root:
+```bash
+cd "$HOME/workspace/yaptide"
+```
+
+Upload with encryption to S3:
 ```bash
 poetry run ./yaptide/admin/simulators.py upload \
-  --bucket yaptide-simulators \
-  --file ./build/shieldhit.encrypted \
-  --endpoint s3.mycompany.com \
-  --access-key AKIAIOSFODNN7EXAMPLE \
-  --secret-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  --bucket shieldhit \
+  --file "$HOME/workspace/shieldhit/shieldhit-lenovo-dev-g12fd3b8c-make-gfortran" \
+  --encrypt
 ```
 
-### Uploading a New FLUKA Version
+**3) Verify download and execution**
 
-**Step 1: Compile FLUKA and create archive**
-
+Prepare temp download directory:
 ```bash
-tar -czf fluka_v2024.tar.gz fluka/
+mkdir -p /tmp/sh-download
 ```
 
-**Step 2: Encrypt the archive**
-
+Download and decrypt from S3:
 ```bash
-poetry run ./yaptide/admin/simulators.py encrypt \
-  --infile fluka_v2024.tar.gz \
-  --outfile fluka_v2024.tar.gz.encrypted \
-  --password my-secure-password \
-  --salt my-salt-value
+poetry run ./yaptide/admin/simulators.py download-shieldhit --dir /tmp/sh-download --decrypt
 ```
 
-**Step 3: Upload to S3**
+Run version check on downloaded binary:
+```bash
+/tmp/sh-download/shieldhit --version
+```
+
+If you want to validate inside the simulation worker container (without overwriting in-container simulators):
 
 ```bash
-poetry run ./yaptide/admin/simulators.py upload \
-  --bucket yaptide-simulators-fluka \
-  --file fluka_v2024.tar.gz.encrypted \
-  --endpoint s3.mycompany.com \
-  --access-key AKIAIOSFODNN7EXAMPLE \
-  --secret-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+docker run --rm -it \
+  -v "/tmp/sh-download/shieldhit:/opt/test/shieldhit:ro" \
+  --entrypoint /bin/bash yaptide_simulation_worker \
+  -c "/opt/test/shieldhit --version"
 ```
 
 ## Environment Variables Configuration
@@ -206,52 +227,3 @@ S3_FLUKA_KEY=fluka_v2024.tar.gz.encrypted
 S3_ENCRYPTION_PASSWORD=my-secure-password
 S3_ENCRYPTION_SALT=my-salt-value
 ```
-
-!!! note "Empty .env in Development"
-    During local development, you can leave these variables unset. The system will automatically use demo SHIELD-HIT12A version from shieldhit.org.
-
-## Troubleshooting
-
-### Demo Version Download Fails
-
-If you see "SHIELD-HIT12A download failed", the demo version download from shieldhit.org failed:
-
-1. Check internet connectivity
-2. Verify that [shieldhit.org](https://shieldhit.org) is accessible
-3. The demo version URL might have changed - check the code in `simulator_storage.py`
-
-### S3 Connection Error
-
-```
-No credentials found. Check your access key and secret key.
-```
-
-**Solution**: Verify `.env` file contains correct S3 credentials.
-
-### Decryption Failed
-
-```
-Decryption failed - invalid token (password+salt)
-```
-
-**Solutions**:
-- Verify password and salt are correct
-- Ensure the file was encrypted with the same password/salt
-- Ensure the file is not corrupted
-
-### S3 Bucket Not Found
-
-```
-Problem accessing bucket named: my-bucket
-```
-
-**Solutions**:
-- Verify bucket exists on S3
-- Verify S3_ENDPOINT is correct
-- Verify credentials have permissions to access the bucket
-
-## See Also
-
-- [Using Docker](using_docker.md) - Deployment instructions
-- [For Developers](for_developers.md) - Local development setup
-- YAPTIDE GitHub: [yaptide/yaptide](https://github.com/yaptide/yaptide)
