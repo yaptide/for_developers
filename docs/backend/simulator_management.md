@@ -161,7 +161,7 @@ Verify binary version:
 Optionally rename to capture host/build metadata (recommended):
 
 ```bash
-mv ./shieldhit ./shieldhit-lenovo-dev-g12fd3b8c-make-gfortran
+mv ./shieldhit ./shieldhit-lenovo-dev-g4ea3f147-make-gfortran
 ```
 
 **2) Upload to S3 with encryption (run from project root `yaptide/`)**
@@ -175,7 +175,7 @@ Upload with encryption to S3:
 ```bash
 poetry run ./yaptide/admin/simulators.py upload \
   --bucket shieldhit \
-  --file "$HOME/workspace/shieldhit/shieldhit-lenovo-dev-g12fd3b8c-make-gfortran" \
+  --file "$HOME/workspace/shieldhit/shieldhit-lenovo-dev-g4ea3f147-make-gfortran" \
   --encrypt
 ```
 
