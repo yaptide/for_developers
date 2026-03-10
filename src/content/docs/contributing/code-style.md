@@ -5,27 +5,51 @@ description: Formatting and linting standards across YAPTIDE repositories.
 
 Each repository enforces consistent code style through automated tools. CI will reject changes that don't conform.
 
+## General Conventions
+
+### Naming
+
+Use standard naming conventions for Python and TypeScript. Use a `_unit` suffix in time-related variables e.g. `max_idle_seconds`. 
+
+### Type Hints
+
+Use type hints on all public functions both in Python and in TypeScript e.g.:
+
+```py
+def get_user(id: int) -> User:
+```
+
+```ts
+export const getUser = (id: number): User => { ... }
+```
+
+### Comments
+
+Use **docstrings** or **JSDocs** for all complex functions and classes. Each docstring must include an `Args:` section that explicitly defines the purpose of every parameter e.g.:
+
+```py
+def log_generator(thefile: TextIOWrapper,
+                  event: threading.Event = None,
+                  max_idle_seconds: float = 3600,
+                  polling_interval_seconds: float = 1) -> Iterator[str]:
+    """
+    Generator equivalent to `tail -f` Linux command.
+    Yields new lines appended to the end of the file.
+    Main purpose is monitoring of the log files.
+
+    Args:
+        thefile: File object to read from.
+        event: Threading event to signal when to stop the generator.
+        max_idle_seconds: Maximum time to wait for new data before raising TimeoutError.
+        polling_interval_seconds: Interval between successive file polls while no new data is available.
+    """
+```
+
+:::note
+While older segments of the codebase may lack this detail, we are enforcing this format moving forward to improve readability and developer onboarding.
+:::
+
 ## Python (Backend & Converter)
-
-### Formatter — YAPF
-
-Both the backend and converter use [YAPF](https://github.com/google/yapf) for Python formatting:
-
-```bash
-poetry run yapf --diff --recursive .    # Check formatting
-poetry run yapf --in-place --recursive . # Auto-format
-```
-
-Configuration is in `pyproject.toml` or `.style.yapf` in the repo root.
-
-### Import Sorting — isort
-
-Imports are sorted with [isort](https://pycqa.github.io/isort/):
-
-```bash
-poetry run isort --check-only .
-poetry run isort .
-```
 
 ### Pre-Commit Hooks
 
@@ -47,17 +71,6 @@ The `.pre-commit-config.yaml` typically includes:
 | `check-yaml` | Validate YAML files |
 | `check-merge-conflict` | Detect leftover merge markers |
 
-### Type Hints
-
-Use type hints on all public functions. The codebase supports Python 3.9+, so use `from __future__ import annotations` for modern syntax:
-
-```python
-from __future__ import annotations
-
-def get_parser_from_str(parser_type: str) -> Parser:
-    ...
-```
-
 ## TypeScript (Frontend)
 
 ### Linter — ESLint
@@ -71,94 +84,8 @@ npm run lint -- --fix # Auto-fix where possible
 
 ### Formatter — Prettier
 
-[Prettier](https://prettier.io/) handles all formatting for TypeScript, JSON, CSS, and Markdown:
+[Prettier](https://prettier.io/) handles all formatting for TypeScript, JSON, CSS, and Markdown. To apply formatting use:
 
 ```bash
-npx prettier --check "src/**/*.{ts,tsx}"
-npx prettier --write "src/**/*.{ts,tsx}"
-```
-
-Key Prettier settings (from `package.json` or `.prettierrc`):
-
-| Setting | Value |
-|---|---|
-| Print width | 100 |
-| Tab width | 4 (tabs) |
-| Single quotes | Yes |
-| Trailing commas | `es5` |
-| Semicolons | Yes |
-
-### TypeScript Strict Mode
-
-The frontend uses `"strict": true` in `tsconfig.json`. This enables:
-
-- `strictNullChecks` — no implicit `null` / `undefined`
-- `noImplicitAny` — all values must have explicit or inferred types
-- `strictFunctionTypes` — stricter function subtyping
-
-**Do not use `any`.** Use `unknown` with type guards instead:
-
-```typescript
-// Bad
-function parse(data: any) { ... }
-
-// Good
-function parse(data: unknown): SimulationResult {
-    if (!isSimulationResult(data)) throw new Error("Invalid data");
-    return data;
-}
-```
-
-### Import Conventions
-
-Group imports in this order, separated by blank lines:
-
-1. React and framework imports
-2. Third-party libraries
-3. Local modules (absolute paths from `src/`)
-4. Relative imports
-5. Type-only imports
-
-```typescript
-import { useEffect, useState } from 'react';
-
-import { Box, Button } from '@mui/material';
-
-import { YaptideEditor } from '../ThreeEditor/js/YaptideEditor';
-
-import type { SimulationResult } from '../types/ResponseTypes';
-```
-
-## General Conventions
-
-### Naming
-
-| Element | Convention | Example |
-|---|---|---|
-| Python variables / functions | `snake_case` | `parse_configs` |
-| Python classes | `PascalCase` | `ShieldhitParser` |
-| Python constants | `UPPER_SNAKE_CASE` | `DEFAULT_ENERGY` |
-| TypeScript variables / functions | `camelCase` | `parseConfigs` |
-| TypeScript classes / components | `PascalCase` | `SimulationPanel` |
-| TypeScript constants | `UPPER_SNAKE_CASE` | `DEFAULT_TIMEOUT` |
-| CSS classes | `kebab-case` | `card-grid` |
-| File names (Python) | `snake_case.py` | `beam_config.py` |
-| File names (TypeScript) | `PascalCase.tsx` or `camelCase.ts` | `SimulationPanel.tsx` |
-
-### Comments
-
-- Write comments for **why**, not **what**. The code shows what; comments explain intent.
-- Use docstrings for all public functions and classes (Python).
-- Use JSDoc for complex exported functions (TypeScript).
-
-### Error Messages
-
-Include context in error messages:
-
-```python
-# Bad
-raise ValueError("Invalid value")
-
-# Good
-raise ValueError(f"Unknown parser type: '{parser_type}'. Expected one of: shieldhit, fluka, geant4, topas")
+npm run format
 ```
