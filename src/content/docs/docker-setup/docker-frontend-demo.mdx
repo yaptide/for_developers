@@ -1,0 +1,59 @@
+---
+title: Frontend Demo — Docker (Geant4)
+description: Production Docker instructions for the frontend-only/demo build of YAPTIDE UI.
+---
+
+In demo mode, YAPTIDE runs entirely in the browser.
+Geant4 is compiled to WebAssembly and executes locally — no backend, no login, no internet connection needed after the initial load.
+
+This is the setup deployed at [yaptide.github.io](https://yaptide.github.io). The Docker image simply serves the static production build — no backend is included.
+
+## When to use this setup
+
+| Scenario                                   | Recommended setup                                                          |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| Frontend / Geant4 in-browser only          | **This page**                                                              |
+| Full stack with SHIELD-HIT12A or FLUKA     | [Docker Celery](/docs/docker-setup/docker-celery/)                            |
+| Full stack with SLURM cluster              | [Docker SLURM](/docs/docker-setup/docker-slurm/)                              |
+
+:::tip
+  Prefer a local setup? See [Frontend Demo — Local](/docs/local-setup/local-frontend-demo/) for the non-containerized version.
+:::
+
+## Prerequisites
+
+TODO Docker setup should not require Node.js or Python - change the dockerfile and update this guide
+
+- **Node.js 20+** with npm
+- **Python 3.9+** with pip and venv — needed to build the converter into a Pyodide/WebAssembly module (only if building locally)
+- **Docker**
+- **Git**
+
+## Production build and Docker image
+
+Build the production demo bundle:
+
+```bash
+npm run build-demo
+```
+
+Build a Docker image that serves the static `build/` output:
+
+```bash
+docker build -t yaptide-ui .
+```
+
+Run the image locally:
+
+```bash
+docker run --rm -d -p 80:80/tcp --name yaptide-ui yaptide-ui
+```
+
+The UI is then served at **http://localhost**.
+
+## Stopping
+```bash
+docker stop yaptide-ui
+```
+
+Since the container was started with `--rm`, it is automatically removed when stopped.

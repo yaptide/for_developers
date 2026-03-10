@@ -1,0 +1,325 @@
+---
+title: Local Setup — SLURM
+description: Run the YAPTIDE backend locally with Keycloak authentication for SLURM integration development.
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+TODO this is based on the page from the old docs which had a guide to connect to the PLGrid SLURM cluster. The new version should focus on the local setup with Keycloak, and the PLGrid-specific instructions can be moved to a separate guide if needed.
+
+This guide covers a full local setup with Keycloak authentication — required for SLURM job submission.
+It builds on the [Celery worker setup](/docs/local-setup/local-celery/) and adds Keycloak for both the backend and frontend.
+
+## When to use this setup
+
+| Scenario                                   | Recommended setup                                                          |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| Frontend / Geant4 in-browser only          | [Local Frontend Demo](/docs/local-setup/local-frontend-demo/)              |
+| Full stack with SHIELD-HIT12A or FLUKA     | [Local Celery](/docs/local-setup/local-celery/)                            |
+| Full stack with SLURM cluster              | **This page**                                                              |
+
+:::tip
+  Prefer Docker? See [Docker — SLURM](/docs/docker-setup/docker-slurm/) for the containerized version of this setup.
+:::
+
+## What you'll run
+
+You need **five terminals** for the backend, plus one for the frontend:
+
+| Terminal | What runs                      |
+| -------- | ------------------------------ |
+| 1        | Redis (Docker container)       |
+| 2        | Keycloak (Docker container)    |
+| 3        | Celery simulation worker       |
+| 4        | Celery helper worker           |
+| 5        | Flask API (with Keycloak vars) |
+| 6        | Frontend dev server            |
+
+## Prerequisites
+
+- **Python 3.9+** with [Poetry](https://python-poetry.org/docs/) installed
+- **Node.js 20+** with npm
+- **Docker** (for Redis and Keycloak)
+- **Git**
+
+## Backend setup
+
+### 1. Clone and install dependencies
+
+```bash
+git clone https://github.com/yaptide/yaptide.git
+cd yaptide
+poetry install
+```
+
+This installs all dependencies (main + test + docs) into a `.venv` directory in the project root.
+
+### 2. Download simulator binaries
+
+YAPTIDE stores simulator binaries on S3 storage. The demo version of SHIELD-HIT12A is freely available:
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+poetry run yaptide/admin/simulators.py download-shieldhit --dir bin
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+poetry run yaptide\admin\simulators.py download-shieldhit --dir bin
+```
+
+</TabItem>
+</Tabs>
+
+:::note
+  The full (licensed) versions of SHIELD-HIT12A and FLUKA are encrypted. The demo download gives you a freely usable binary for development.
+:::
+
+### 3. Start Redis
+
+Redis is the message broker between Flask and the Celery workers.
+
+```bash
+docker run --detach --publish 6379:6379 --name yaptide_redis redis:7-alpine
+```
+
+### 4. Start Keycloak
+
+```bash
+docker run --detach \
+  --name yaptide_keycloak \
+  --publish 8080:8080 \
+  -e KEYCLOAK_ADMIN=admin \
+  -e KEYCLOAK_ADMIN_PASSWORD=admin \
+  quay.io/keycloak/keycloak:latest \
+  start-dev
+```
+
+Once running, open **http://localhost:8080** and log in with `admin` / `admin`.
+
+#### Configure Keycloak realm and client
+
+1. Create a new realm named **`yaptide`**
+2. Inside the realm, create a new client:
+   - **Client ID:** `yaptide-app`
+   - **Client protocol:** `openid-connect`
+   - **Access type:** `public`
+   - **Valid redirect URIs:** `http://localhost:3000/*`
+   - **Web origins:** `http://localhost:3000`
+3. Create at least one user in the realm for testing
+
+### 5. Start the Celery simulation worker
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+PATH=$PATH:bin \
+BACKEND_INTERNAL_URL=http://127.0.0.1:5000 \
+CELERY_BROKER_URL=redis://127.0.0.1:6379/0 \
+CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 \
+poetry run celery \
+  --app yaptide.celery.simulation_worker worker \
+  --events -P eventlet \
+  --hostname yaptide-simulation-worker \
+  --queues simulations \
+  --loglevel=debug
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+$Env:PATH += ";" + (Join-Path -Path (Get-Location) -ChildPath "bin")
+$env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"
+$env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
+$env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"
+poetry run celery --app yaptide.celery.simulation_worker worker --events -P eventlet --hostname yaptide-simulation-worker --queues simulations --loglevel=debug
+```
+
+</TabItem>
+</Tabs>
+
+**Why these variables?**
+
+- `PATH` — so the worker can find the SHIELD-HIT12A binary in `bin/`
+- `BACKEND_INTERNAL_URL` — the worker reports progress back to Flask at this address
+- `CELERY_BROKER_URL` / `CELERY_RESULT_BACKEND` — connect to Redis for task dispatch and result storage
+
+### 6. Start the Celery helper worker
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///db.sqlite \
+BACKEND_INTERNAL_URL=http://127.0.0.1:5000 \
+CELERY_BROKER_URL=redis://127.0.0.1:6379/0 \
+CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 \
+poetry run celery \
+  --app yaptide.utils.helper_worker worker \
+  --events \
+  --hostname yaptide-helper-worker \
+  --queues helper \
+  --loglevel=debug
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"
+$env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"
+$env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
+$env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"
+poetry run celery --app yaptide.utils.helper_worker worker --events --hostname yaptide-helper-worker --queues helper --loglevel=debug
+```
+
+</TabItem>
+</Tabs>
+
+### 7. Start the Flask API
+
+This setup requires three additional Keycloak environment variables compared to the plain Celery setup:
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+FLASK_SQLALCHEMY_ECHO=True \
+FLASK_USE_CORS=True \
+FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite" \
+CELERY_BROKER_URL=redis://127.0.0.1:6379/0 \
+CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 \
+KEYCLOAK_BASE_URL=http://127.0.0.1:8080 \
+KEYCLOAK_REALM=yaptide \
+KEYCLOAK_CLIENT_ID=yaptide-app \
+poetry run flask --debug --app yaptide.application run
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+$env:FLASK_SQLALCHEMY_ECHO="True"
+$env:FLASK_USE_CORS="True"
+$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"
+$env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
+$env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"
+$env:KEYCLOAK_BASE_URL="http://127.0.0.1:8080"
+$env:KEYCLOAK_REALM="yaptide"
+$env:KEYCLOAK_CLIENT_ID="yaptide-app"
+poetry run flask --debug --app yaptide.application run
+```
+
+</TabItem>
+</Tabs>
+
+**Keycloak-specific variables:**
+
+- `KEYCLOAK_BASE_URL` — where Flask can reach the Keycloak server
+- `KEYCLOAK_REALM` — the realm you created in step 4
+- `KEYCLOAK_CLIENT_ID` — the client you created in step 4
+
+`FLASK_USE_CORS=True`, `--debug`, and `FLASK_SQLALCHEMY_ECHO=True` work the same as in the [Celery setup](/docs/local-setup/local-celery/#6-start-the-flask-api).
+
+### 8. Create a local user (optional)
+
+TODO verify whether this works alongside Keycloak auth.
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///instance/db.sqlite" \
+poetry run yaptide/admin/db_manage.py add-user admin --password password
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///instance/db.sqlite"
+poetry run yaptide\admin\db_manage.py add-user admin --password password
+```
+
+</TabItem>
+</Tabs>
+
+## Frontend setup
+
+Open a new terminal:
+
+```bash
+git clone https://github.com/yaptide/ui.git
+cd ui
+git submodule update --init --recursive
+npm install
+```
+
+Create a `.env` file in the `ui/` directory — this setup requires Keycloak variables that are not needed in the plain Celery setup:
+
+```bash title="ui/.env"
+REACT_APP_ALT_AUTH=plg
+REACT_APP_KEYCLOAK_BASE_URL=http://127.0.0.1:8080
+REACT_APP_KEYCLOAK_REALM=yaptide
+REACT_APP_KEYCLOAK_CLIENT_ID=yaptide-app
+REACT_APP_BACKEND_URL=http://127.0.0.1:5000
+```
+
+```bash
+npm run start-plg
+```
+
+Open **http://localhost:3000/web_dev**. The **CONNECT WITH PLGRID** button will be visible on the login screen.
+
+:::caution
+  Access both frontend and backend using the **same domain** — either both `localhost` or both `127.0.0.1`. Mixing them breaks cookie-based authentication (`SameSite=Lax` policy).
+:::
+
+## Running tests
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+poetry run pytest
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+On Windows, run tests one by one:
+
+```powershell
+Get-ChildItem -Path "tests" -Filter "test_*.py" -Recurse | foreach { poetry run pytest $_.FullName }
+```
+
+</TabItem>
+</Tabs>
+
+## Pre-commit hooks
+
+The project uses `yapf` for code formatting via pre-commit hooks:
+
+```bash
+poetry run pre-commit install
+```
+
+After installing, hooks run automatically on every `git commit`. If a hook fails:
+
+1. The commit is aborted
+2. Some hooks auto-fix files (like `yapf`) — just commit again
+3. Other issues are reported in the terminal for manual fixing
+
+To run all hooks manually:
+
+```bash
+pre-commit run --all-files
+```
+
+TODO maybe add "Useful commands" section like in local-frontend-only
