@@ -19,10 +19,6 @@ export default defineConfig({
       social: [
         { icon: "github", label: "GitHub", href: "https://github.com/yaptide" },
       ],
-      // Temporarily disable Starlight's injected 404 route to avoid a zod parse
-      // error during static route generation in CI. This is a short-term
-      // workaround while we investigate the root cause.
-      disable404Route: true,
       customCss: ["./src/styles/custom.css"],
       editLink: {
         baseUrl: "https://github.com/yaptide/yaptide-docs/edit/main/",
