@@ -30,10 +30,10 @@ Protected endpoints return `401 Unauthorized` if no valid token is present.
 
 | Group | Prefix | Description |
 |---|---|---|
-| [Auth](/docs/api-reference/auth/) | `/auth/*` | Registration, login, logout, token refresh |
-| [Jobs](/docs/api-reference/jobs/) | `/jobs/*` | Submit, monitor, and cancel simulations |
-| [Results](/docs/api-reference/results/) | `/results`, `/estimators`, `/inputs`, `/logfiles` | Retrieve simulation output |
-| [User](/docs/api-reference/user/) | `/user/*`, `/clusters` | User profile and cluster management |
+| [Auth](/for_developers/api-reference/auth/) | `/auth/*` | Registration, login, logout, token refresh |
+| [Jobs](/for_developers/api-reference/jobs/) | `/jobs/*` | Submit, monitor, and cancel simulations |
+| [Results](/for_developers/api-reference/results/) | `/results`, `/estimators`, `/inputs`, `/logfiles` | Retrieve simulation output |
+| [User](/for_developers/api-reference/user/) | `/user/*`, `/clusters` | User profile and cluster management |
 
 ## Common Patterns
 

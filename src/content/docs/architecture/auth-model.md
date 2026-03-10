@@ -127,7 +127,7 @@ The backend also:
 
 ## Demo Mode
 
-When `REACT_APP_TARGET=demo`, authentication is bypassed entirely and only in-browser Geant4 simulations are available. See [Frontend Demo — Local](/docs/local-setup/local-frontend-demo/) for setup instructions.
+When `REACT_APP_TARGET=demo`, authentication is bypassed entirely and only in-browser Geant4 simulations are available. See [Frontend Demo — Local](/for_developers/local-setup/local-frontend-demo/) for setup instructions.
 
 ## Backend Authorization
 

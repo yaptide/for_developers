@@ -7,8 +7,8 @@ This guide walks through adding support for a new Monte Carlo simulation engine 
 
 ## Prerequisites
 
-- Familiarity with the [conversion flow](/docs/converter/conversion-flow/)
-- Working dev setup (see [converter dev setup](/docs/get-started/dev-setup-converter/))
+- Familiarity with the [conversion flow](/for_developers/converter/conversion-flow/)
+- Working dev setup (see [converter dev setup](/for_developers/get-started/dev-setup-converter/))
 - Understanding of your target engine's input file format
 
 ## Step 1 — Create the Parser Directory

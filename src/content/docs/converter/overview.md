@@ -115,6 +115,6 @@ converter/
 
 ## Related Pages
 
-- [Conversion Flow](/docs/converter/conversion-flow/) — step-by-step parsing pipeline
-- [Adding a Simulator](/docs/converter/adding-a-simulator/) — how to add a new engine
-- Engine-specific docs: [SHIELD-HIT12A](/docs/converter/shieldhit/), [FLUKA](/docs/converter/fluka/), [Geant4](/docs/converter/geant4/)
+- [Conversion Flow](/for_developers/converter/conversion-flow/) — step-by-step parsing pipeline
+- [Adding a Simulator](/for_developers/converter/adding-a-simulator/) — how to add a new engine
+- Engine-specific docs: [SHIELD-HIT12A](/for_developers/converter/shieldhit/), [FLUKA](/for_developers/converter/fluka/), [Geant4](/for_developers/converter/geant4/)

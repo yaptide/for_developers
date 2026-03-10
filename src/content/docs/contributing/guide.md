@@ -25,7 +25,7 @@ git checkout -b feature/my-change
 
 ### 2. Make Changes
 
-- Write code following the [code style guide](/docs/contributing/code-style/).
+- Write code following the [code style guide](/for_developers/contributing/code-style/).
 - Add or update tests.
 - Update documentation if behaviour changes.
 

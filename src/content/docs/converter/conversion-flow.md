@@ -60,7 +60,7 @@ This is where the real work happens. The parser walks through the JSON payload a
 6. **Scoring** — quantities to score (dose, fluence, LET, etc.) tied to detectors
 7. **Physics** — delta-ray production, energy thresholds, nuclear reactions
 
-The JSON keys correspond to the top-level groups described in the [project JSON schema](/docs/architecture/project-json-schema/).
+The JSON keys correspond to the top-level groups described in the [project JSON schema](/for_developers/architecture/project-json-schema/).
 
 ## Stage 3 — Extract Output
 

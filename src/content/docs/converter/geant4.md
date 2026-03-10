@@ -168,7 +168,7 @@ Geant4 uses the NIST material database. The converter maps YAPTIDE materials to 
 
 When running via the Geant4 WebAssembly build in the browser, the converter's output is **consumed directly** by the in-browser Geant4 instance. The files are passed as in-memory strings — never written to disk.
 
-See [Geant4 WebAssembly](/docs/frontend/geant4-wasm/) for the browser execution flow.
+See [Geant4 WebAssembly](/for_developers/frontend/geant4-wasm/) for the browser execution flow.
 
 ## Limitations
 

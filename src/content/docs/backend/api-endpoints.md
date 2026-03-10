@@ -3,7 +3,7 @@ title: API Endpoints
 description: Guide to all YAPTIDE REST API endpoints.
 ---
 
-All endpoints are registered in `routes/main_routes.py`. This page explains when and why each endpoint is called, grouped by domain. For the raw OpenAPI specification, see the [API Reference](/docs/api-reference/overview/).
+All endpoints are registered in `routes/main_routes.py`. This page explains when and why each endpoint is called, grouped by domain. For the raw OpenAPI specification, see the [API Reference](/for_developers/api-reference/overview/).
 
 ## Authentication
 

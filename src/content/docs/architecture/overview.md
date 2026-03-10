@@ -97,7 +97,7 @@ YAPTIDE supports three ways to run a simulation:
 | **Local (Wasm)** | Geant4 | User's browser | Geant4 compiled to WebAssembly, no server needed |
 
 :::tip
-  Want to understand how data moves through these paths end-to-end? See [Data Flow](/docs/architecture/data-flow/).
+  Want to understand how data moves through these paths end-to-end? See [Data Flow](/for_developers/architecture/data-flow/).
 :::
 
 ## The JSON Contract
@@ -115,7 +115,7 @@ Top-level keys:
 - `physic` — physics model configuration
 
 :::tip
-See [Project JSON Schema](/docs/architecture/project-json-schema/) for the full specification.
+See [Project JSON Schema](/for_developers/architecture/project-json-schema/) for the full specification.
 :::
 
 ## Technology Stack

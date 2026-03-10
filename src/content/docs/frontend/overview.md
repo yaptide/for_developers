@@ -124,7 +124,7 @@ React bridges these signals via `useSignal` hooks to trigger re-renders.
 
 ### Command Pattern
 
-All editor mutations (add figure, move object, change material) go through a Command pattern for **undo/redo** support. See [Adding Commands](/docs/frontend/adding-commands/).
+All editor mutations (add figure, move object, change material) go through a Command pattern for **undo/redo** support. See [Adding Commands](/for_developers/frontend/adding-commands/).
 
 ### Serialization
 
@@ -145,7 +145,7 @@ The project uses **Create React App** with **react-app-rewired** for Webpack cus
 
 ## Related Pages
 
-- [3D Editor](/docs/frontend/3d-editor/) — editor internals and managers
-- [Simulation Services](/docs/frontend/simulation-services/) — remote and local execution
-- [Pyodide Converter](/docs/frontend/pyodide-converter/) — in-browser Python
-- [Auth Flows](/docs/frontend/auth-flows/) — authentication implementation
+- [3D Editor](/for_developers/frontend/3d-editor/) — editor internals and managers
+- [Simulation Services](/for_developers/frontend/simulation-services/) — remote and local execution
+- [Pyodide Converter](/for_developers/frontend/pyodide-converter/) — in-browser Python
+- [Auth Flows](/for_developers/frontend/auth-flows/) — authentication implementation

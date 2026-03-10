@@ -107,7 +107,7 @@ All large data (input files, simulation results, logs) is **gzip-compressed** be
 
 ## Related Pages
 
-- [API Endpoints](/docs/backend/api-endpoints/) — walkthrough of all REST routes
-- [Database](/docs/backend/database/) — data model and migrations
-- [Simulation Lifecycle](/docs/backend/simulation-lifecycle/) — job state machine
-- [Docker Deployment](/docs/backend/docker-deployment/) — containerized setup
+- [API Endpoints](/for_developers/backend/api-endpoints/) — walkthrough of all REST routes
+- [Database](/for_developers/backend/database/) — data model and migrations
+- [Simulation Lifecycle](/for_developers/backend/simulation-lifecycle/) — job state machine
+- [Docker Deployment](/for_developers/backend/docker-deployment/) — containerized setup

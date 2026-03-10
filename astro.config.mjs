@@ -5,7 +5,7 @@ import starlight from "@astrojs/starlight";
 // https://astro.build/config
 export default defineConfig({
   site: "https://yaptide.github.io",
-  base: "/docs",
+  base: "/for_developers/",
   integrations: [
     starlight({
       title: "YAPTIDE Developers",
