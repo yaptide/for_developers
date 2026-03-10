@@ -29,6 +29,18 @@ TODO Docker setup should not require Node.js or Python - change the dockerfile a
 - **Docker**
 - **Git**
 
+## Setup
+
+```bash
+git clone https://github.com/yaptide/ui.git
+cd ui
+git submodule update --init --recursive
+npm install
+```
+
+`git submodule update` pulls the [converter](https://github.com/yaptide/converter) submodule.
+The build step compiles it into a WebAssembly module via Pyodide, which is why Python is required even for frontend-only work.
+
 ## Production build and Docker image
 
 Build the production demo bundle:
