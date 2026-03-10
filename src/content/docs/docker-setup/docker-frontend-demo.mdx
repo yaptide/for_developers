@@ -22,13 +22,7 @@ This is the setup deployed at [yaptide.github.io](https://yaptide.github.io). Th
 
 ## Prerequisites
 
-:::caution[Work in Progress]
-  Docker setup requires partial local build of the converter, which in turn requires Python and Node.js. This is not ideal for a frontend-only demo — we will update the Dockerfile to pre-build the converter and remove these dependencies in the future.
-:::
-
 - **Docker Engine 20.10+**
-- **Node.js 20+** with npm
-- **Python 3.9+** with pip and venv — needed to build the converter into a Pyodide/WebAssembly module (only if building locally)
 - **Git**
 
 ## Setup
@@ -36,38 +30,13 @@ This is the setup deployed at [yaptide.github.io](https://yaptide.github.io). Th
 ```bash
 git clone https://github.com/yaptide/ui.git
 cd ui
-git submodule update --init --recursive
-npm install
-```
-
-`git submodule update` pulls the [converter](https://github.com/yaptide/converter) submodule.
-The build step compiles it into a WebAssembly module via Pyodide, which is why Python is required even for frontend-only work.
-
-## Production build and Docker image
-
-Build the production demo bundle:
-
-```bash
-npm run build-demo
-```
-
-Build a Docker image that serves the static `build/` output:
-
-```bash
-docker build -t yaptide-ui .
-```
-
-Run the image locally:
-
-```bash
-docker run --rm -d -p 80:80/tcp --name yaptide-ui yaptide-ui
+docker compose up
 ```
 
 The UI is then served at **http://localhost**.
 
 ## Stopping
-```bash
-docker stop yaptide-ui
-```
 
-Since the container was started with `--rm`, it is automatically removed when stopped.
+```bash
+docker compose down
+```
