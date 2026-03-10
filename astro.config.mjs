@@ -44,7 +44,7 @@ export default defineConfig({
             }
           ],
         },
-          {
+        {
           label: "Docker Setup",
           items: [
             {
