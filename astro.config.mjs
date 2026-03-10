@@ -5,7 +5,7 @@ import starlight from "@astrojs/starlight";
 // https://astro.build/config
 export default defineConfig({
   site: "https://yaptide.github.io",
-  base: "/for_developers/",
+  base: "/for_developers",
   integrations: [
     starlight({
       title: "YAPTIDE Developers",
@@ -15,6 +15,7 @@ export default defineConfig({
         dark: "./src/assets/yaptide-logo.svg",
         replacesTitle: false,
       },
+      favicon: "/src/assets/yaptide-logo.svg",
       social: [
         { icon: "github", label: "GitHub", href: "https://github.com/yaptide" },
       ],
