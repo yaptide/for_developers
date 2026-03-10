@@ -74,6 +74,15 @@ export default defineConfig({
           ],
         },
         {
+          label: "Contributing",
+          collapsed: false,
+          items: [
+            { label: "Contribution Guide", slug: "contributing/guide" },
+            { label: "Code Style", slug: "contributing/code-style" },
+            { label: "Glossary", slug: "contributing/glossary" },
+          ],
+        },
+        {
           label: "Backend",
           collapsed: true,
           items: [
@@ -129,15 +138,6 @@ export default defineConfig({
             { label: "FLUKA", slug: "converter/fluka" },
             { label: "Geant4", slug: "converter/geant4" },
             { label: "Testing", slug: "converter/testing" },
-          ],
-        },
-        {
-          label: "Contributing",
-          collapsed: true,
-          items: [
-            { label: "Contribution Guide", slug: "contributing/guide" },
-            { label: "Code Style", slug: "contributing/code-style" },
-            { label: "Glossary", slug: "contributing/glossary" },
           ],
         },
         {
