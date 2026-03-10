@@ -21,9 +21,11 @@ This guide covers the **development** Docker setup — you get a production-like
 
 ## Prerequisites
 
-TODO the Node.js and Python requirements should be removed for the docker setup - update the dockerfile and this guide
+:::caution[Work in Progress]
+  Docker setup requires partial local build of the converter, which in turn requires Python and Node.js. This is not ideal for a frontend-only demo — we will update the Dockerfile to pre-build the converter and remove these dependencies in the future.
+:::
 
-- **Docker Engine 20.10+** with Docker Compose v2
+- **Docker Engine 20.10+**
 - **Node.js 20+** with npm (for the frontend, until the frontend Docker setup is complete)
 - **Python 3.9+** with pip and venv (for the converter submodule build, until the frontend Docker setup is complete)
 - **Git**
@@ -79,8 +81,7 @@ docker exec -w /usr/local/app/ yaptide_flask \
 ```
 
 ## Step 3: Start the frontend
-
-TODO change this to use Docker instructions — the frontend currently requires a local setup
+{/* TODO change this to use Docker instructions — the frontend currently requires a local setup */}
 
 The backend API is available at **http://localhost:5000** (via NGINX). Start the frontend in a separate terminal:
 ```bash

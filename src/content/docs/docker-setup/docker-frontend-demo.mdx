@@ -22,11 +22,13 @@ This is the setup deployed at [yaptide.github.io](https://yaptide.github.io). Th
 
 ## Prerequisites
 
-TODO Docker setup should not require Node.js or Python - change the dockerfile and update this guide
+:::caution[Work in Progress]
+  Docker setup requires partial local build of the converter, which in turn requires Python and Node.js. This is not ideal for a frontend-only demo — we will update the Dockerfile to pre-build the converter and remove these dependencies in the future.
+:::
 
+- **Docker Engine 20.10+**
 - **Node.js 20+** with npm
 - **Python 3.9+** with pip and venv — needed to build the converter into a Pyodide/WebAssembly module (only if building locally)
-- **Docker**
 - **Git**
 
 ## Setup
