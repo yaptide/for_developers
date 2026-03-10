@@ -247,5 +247,3 @@ Optional special components such as beam modulators (SOBP wheel definitions) and
 ## Version History
 
 The editor JSON format is versioned. The `metadata.version` field tracks the schema version. The UI handles backward compatibility for older project files by migrating them on load.
-
-TODO this metadata field is not mentioned anywhere in the schemas. find out where it is and add it
