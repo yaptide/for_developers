@@ -15,7 +15,7 @@ export default defineConfig({
         dark: "./src/assets/yaptide-logo.svg",
         replacesTitle: false,
       },
-      favicon: "/src/assets/yaptide-logo.svg",
+      favicon: "/favicon.svg",
       social: [
         { icon: "github", label: "GitHub", href: "https://github.com/yaptide" },
       ],
