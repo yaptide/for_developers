@@ -30,8 +30,11 @@ This is the setup deployed at [yaptide.github.io](https://yaptide.github.io). Th
 ```bash
 git clone https://github.com/yaptide/ui.git
 cd ui
+git submodule update --init --recursive
 docker compose up
 ```
+
+`git submodule update` pulls the [converter](https://github.com/yaptide/converter) submodule.
 
 The UI is then served at **http://localhost**.
 

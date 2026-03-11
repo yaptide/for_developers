@@ -80,7 +80,11 @@ The backend API is available at **http://localhost:5000** (via NGINX). Clone the
 
 ```bash
 git clone https://github.com/yaptide/ui.git
+cd ui
+git submodule update --init --recursive
 ```
+
+`git submodule update` pulls the [converter](https://github.com/yaptide/converter) submodule.
 
 Create a `.env` file in the `ui/` directory:
 ```bash title="ui/.env"
