@@ -10,7 +10,7 @@ Welcome to the YAPTIDE developer documentation. This site is built with [Starlig
 To get a local copy up and running, follow these steps.
 
 ### Prerequisites
-Make sure you have [Node.js](https://nodejs.org/) installed (version 18.14.1 or higher).
+Make sure you have [Node.js](https://nodejs.org/) installed (version 20 or higher).
 
 ### Installation
 
