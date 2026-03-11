@@ -26,6 +26,8 @@ jobs:
   # Single deploy job since we're just deploying
   deploy:
     runs-on: ubuntu-latest
+    env:
+      ASTRO_TELEMETRY_DISABLED: 1
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
