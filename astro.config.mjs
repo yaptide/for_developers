@@ -21,7 +21,7 @@ export default defineConfig({
       ],
       customCss: ["./src/styles/custom.css"],
       editLink: {
-        baseUrl: "https://github.com/yaptide/yaptide-docs/edit/main/",
+        baseUrl: "https://github.com/yaptide/for_developers/edit/main/",
       },
       sidebar: [
         {
