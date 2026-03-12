@@ -6,7 +6,6 @@ description: Run the YAPTIDE backend locally with Celery workers for SHIELD-HIT1
 import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 This guide covers a full local setup — Flask API, Redis, Celery simulation worker, Celery helper worker, and the frontend.
-Use this when you need to run SHIELD-HIT12A or FLUKA simulations locally with fast iteration on backend code.
 
 ## When to use this setup
 
@@ -17,7 +16,8 @@ Use this when you need to run SHIELD-HIT12A or FLUKA simulations locally with fa
 | Full stack with SLURM cluster              | [Local SLURM](/for_developers/local-setup/local-slurm/)                              |
 
 :::tip
-  Prefer Docker? See [Celery Workers — Docker](/for_developers/docker-setup/docker-celery/) for the containerized version of this setup.
+If you don't need hot-reload, the [Docker setup](/for_developers/docker-setup/docker-celery/) 
+is simpler — no dependency management and easier teardown.
 :::
 
 ## What you'll run
