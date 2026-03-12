@@ -35,7 +35,7 @@ git checkout -b feature/my-change
 git push origin feature/my-change
 ```
 
-Open a pull request on GitHub against `master`. Include:
+Open a pull request on GitHub against the default branch (`master` for **yaptide**, **ui** and **converter** repos, `main` for **docs** and **for_developers** repos). Include:
 
 - **What** the change does (one sentence)
 - **Why** it's needed
