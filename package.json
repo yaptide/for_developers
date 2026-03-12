@@ -1,0 +1,30 @@
+{
+  "name": "yaptide-developer-docs",
+  "type": "module",
+  "version": "2.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/react": "^5.0.0",
+    "@astrojs/sitemap": "3.2.1",
+    "@astrojs/starlight": "^0.37.6",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "astro": "^5.6.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "sharp": "^0.34.2",
+    "swagger-ui-react": "^5.32.0"
+  },
+  "overrides": {
+    "@astrojs/sitemap": "3.2.1"
+  },
+  "devDependencies": {
+    "@types/swagger-ui-react": "^5.18.0"
+  }
+}

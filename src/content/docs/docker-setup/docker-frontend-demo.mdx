@@ -1,0 +1,63 @@
+---
+title: Frontend Demo — Docker (Geant4)
+description: Production Docker instructions for the frontend-only/demo build of YAPTIDE UI.
+---
+
+In demo mode, YAPTIDE runs entirely in the browser.
+Geant4 is compiled to WebAssembly and executes locally — no backend, no login, no internet connection needed after the initial load.
+
+This is the setup deployed at [yaptide.github.io](https://yaptide.github.io). The Docker image simply serves the static production build — no backend is included.
+
+## When to use this setup
+
+| Scenario                                   | Recommended setup                                                          |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| Frontend / Geant4 in-browser only          | **This page**                                                              |
+| Full stack with SHIELD-HIT12A or FLUKA     | [Docker Celery](/for_developers/docker-setup/docker-celery/)                            |
+| Full stack with SLURM cluster              | [Docker SLURM](/for_developers/docker-setup/docker-slurm/)                              |
+
+:::tip
+Actively developing backend code? The [Local setup](/for_developers/local-setup/local-frontend-demo/)
+gives you hot-reload — no container rebuilds on every change.
+:::
+
+## Prerequisites
+
+- **Docker Engine 20.10+**
+- **Git**
+
+## Setup
+
+Clone the repository:
+
+```bash
+git clone https://github.com/yaptide/ui.git
+```
+
+Navigate to the `ui` directory:
+
+```bash
+cd ui
+```
+
+Pull the [converter](https://github.com/yaptide/converter) submodule. 
+The converter is a standalone Python package that translates the editor's JSON project format 
+into native input files for simulation engines:
+
+```bash
+git submodule update --init --recursive
+```
+
+Start the container:
+
+```bash
+docker compose up
+```
+
+The UI is then served at **http://localhost**.
+
+## Stopping
+
+```bash
+docker compose down
+```

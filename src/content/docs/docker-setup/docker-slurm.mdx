@@ -1,0 +1,25 @@
+---
+title: Docker Setup — SLURM
+description: Run the full YAPTIDE backend in Docker with Keycloak authentication for SLURM integration.
+---
+
+This guide covers running the full YAPTIDE backend in Docker with Keycloak enabled — useful for integration testing and deployments that require SLURM / PLGrid.
+
+This is the setup deployed at [yaptide.c3.plgrid.pl](https://yaptide.c3.plgrid.pl).
+
+## When to use this setup
+
+| Scenario                                   | Recommended setup                                                          |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| Frontend / Geant4 in-browser only          | [Local Frontend Demo](/for_developers/local-setup/local-frontend-demo/)              |
+| Full stack with SHIELD-HIT12A or FLUKA     | [Local Celery](/for_developers/local-setup/local-celery/)                            |
+| Full stack with SLURM cluster              | **This page**                                                              |
+
+:::tip
+Actively developing backend code? The [Local setup](/for_developers/local-setup/local-slurm/)
+gives you hot-reload — no container rebuilds on every change.
+:::
+
+:::caution[Work in Progress]
+  This page is not yet complete — we are still working on the SLURM integration and will update this guide once it's ready. In the meantime, see the [Docker — Celery](/for_developers/docker-setup/docker-celery/) guide for the Celery setup.
+:::

@@ -1,0 +1,326 @@
+---
+title: Local Setup — Celery Workers
+description: Run the YAPTIDE backend locally with Celery workers for SHIELD-HIT12A and FLUKA simulations.
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
+This guide covers a full local setup — Flask API, Redis, Celery simulation worker, Celery helper worker, and the frontend.
+
+## When to use this setup
+
+| Scenario                                   | Recommended setup                                                          |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| Frontend / Geant4 in-browser only          | [Local Frontend Demo](/for_developers/local-setup/local-frontend-demo/)              |
+| Full stack with SHIELD-HIT12A or FLUKA     | **This page**                                                              |
+| Full stack with SLURM cluster              | [Local SLURM](/for_developers/local-setup/local-slurm/)                              |
+
+:::tip
+If you don't need hot-reload, the [Docker setup](/for_developers/docker-setup/docker-celery/) 
+is simpler — no dependency management and easier teardown.
+:::
+
+## What you'll run
+
+You need **three terminals** for the backend, plus one for the frontend:
+
+| Terminal | What runs                |
+| -------- | ------------------------ |
+| 1        | Celery simulation worker |
+| 2        | Celery helper worker     |
+| 3        | Flask API                |
+| 4        | Frontend dev server      |
+
+## Prerequisites
+
+- **Python 3.9+** with [Poetry](https://python-poetry.org/docs/) installed
+- **Node.js 20+** with npm
+- **Docker** (for Redis)
+- **Git**
+
+## Backend setup
+
+### 1. Clone and install dependencies
+
+Clone the repository:
+
+```bash
+git clone https://github.com/yaptide/yaptide.git
+```
+
+Navigate to the `yaptide/` directory:
+
+```bash
+cd yaptide
+```
+
+Install Python dependencies with Poetry. This will create a virtual environment in `.venv/` and install all required packages for the backend:
+
+```bash
+poetry install
+```
+
+### 2. Download simulator binaries
+
+YAPTIDE stores licensed simulator binaries on S3-compatible object storage. The `download-shieldhit` command has two modes depending on whether S3 credentials are provided:
+
+- **Without S3 credentials** (default demo mode): downloads the freely available SHIELD-HIT12A demo binary directly from the project website. No configuration needed.
+- **With S3 credentials + `--decrypt` flag**: downloads the full licensed binary from your S3 bucket and decrypts it using the configured encryption key.
+
+<Tabs syncKey="os">
+  <TabItem label="Linux">
+    ```bash
+    poetry run yaptide/admin/simulators.py download-shieldhit --dir bin
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    poetry run yaptide\admin\simulators.py download-shieldhit --dir bin
+    ```
+  </TabItem>
+</Tabs>
+
+To use S3 (for the full licensed version), create a `.env` file in the project root with the following variables:
+
+```env
+S3_ENDPOINT=https://your-s3-endpoint.com
+S3_ACCESS_KEY=your-access-key
+S3_SECRET_KEY=your-secret-key
+S3_ENCRYPTION_PASSWORD=your-encryption-password
+S3_ENCRYPTION_SALT=your-encryption-salt
+S3_SHIELDHIT_BUCKET=your-bucket-name
+S3_SHIELDHIT_KEY=shieldhit-filename.tar.gz
+```
+
+Then run the download with S3 and decryption enabled:
+
+<Tabs syncKey="os">
+  <TabItem label="Linux">
+    ```bash
+    poetry run yaptide/admin/simulators.py download-shieldhit --dir bin --decrypt
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    poetry run yaptide\admin\simulators.py download-shieldhit --dir bin --decrypt
+    ```
+  </TabItem>
+</Tabs>
+
+:::note
+The free demo binary is sufficient for development and testing. The full licensed version of SHIELD-HIT12A (and FLUKA) requires S3 access and an encryption key — contact your institution or the SHIELD-HIT12A team for access.
+:::
+
+### 3. Start Redis
+
+Redis is the message broker between Flask and the Celery workers.
+The simplest approach is a Docker container:
+
+```bash
+docker run --detach --publish 6379:6379 --name yaptide_redis_local redis:7-alpine
+```
+
+### 4. Start the Celery simulation worker
+
+This worker picks up simulation jobs from the queue and runs the simulator. It needs access to the simulator binaries (the `bin` directory from step 2).
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+PATH=$PATH:bin BACKEND_INTERNAL_URL=http://127.0.0.1:5000 CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run celery --app yaptide.celery.simulation_worker worker --events -P eventlet --hostname yaptide-simulation-worker --queues simulations --loglevel=debug
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+$Env:PATH += ";" + (Join-Path -Path (Get-Location) -ChildPath "bin"); $env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run celery --app yaptide.celery.simulation_worker worker --events -P eventlet --hostname yaptide-simulation-worker --queues simulations --loglevel=debug
+```
+
+</TabItem>
+</Tabs>
+
+**Why these variables?**
+
+- `PATH` — so the worker can find the SHIELD-HIT12A binary in `bin/`
+- `BACKEND_INTERNAL_URL` — the worker reports progress back to Flask at this address
+- `CELERY_BROKER_URL` / `CELERY_RESULT_BACKEND` — connect to Redis for task dispatch and result storage
+
+### 5. Start the Celery helper worker
+
+The helper worker handles post-processing tasks (collecting results, cleanup). Open a second backend terminal and go to the `yaptide/` directory. Run:
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///db.sqlite BACKEND_INTERNAL_URL=http://127.0.0.1:5000 CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run celery --app yaptide.utils.helper_worker worker --events --hostname yaptide-helper-worker --queues helper --loglevel=debug
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"; $env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run celery --app yaptide.utils.helper_worker worker --events --hostname yaptide-helper-worker --queues helper --loglevel=debug
+```
+
+</TabItem>
+</Tabs>
+
+### 6. Start the Flask API
+
+Open a third backend terminal and go to the `yaptide/` directory. Run:
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+FLASK_SQLALCHEMY_ECHO=True FLASK_USE_CORS=True FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite" CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run flask --debug --app yaptide.application run
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+$env:FLASK_SQLALCHEMY_ECHO="True"; $env:FLASK_USE_CORS="True"; $env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run flask --debug --app yaptide.application run
+```
+
+</TabItem>
+</Tabs>
+
+**Why `FLASK_USE_CORS=True`?** During development, the frontend runs on `localhost:3000` and the backend on `localhost:5000`. Without CORS enabled, the browser blocks cross-origin requests.
+
+This creates `db.sqlite` inside `./instance/` (default [Flask instance folder](https://flask.palletsprojects.com/en/3.0.x/config/#instance-folders)).
+
+`--debug` flag enables Flask debug messages and auto-reload on code changes.
+
+`FLASK_SQLALCHEMY_ECHO=True` enables SQL query logging for debugging database interactions.
+
+### 7. Create a user
+
+Before logging in from the frontend, you need to create a user in the database. Open the 4th terminal and go to the `yaptide/` directory. Run:
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///instance/db.sqlite" poetry run yaptide/admin/db_manage.py add-user admin --password password
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///instance/db.sqlite"; poetry run yaptide\admin\db_manage.py add-user admin --password password
+```
+
+</TabItem>
+</Tabs>
+
+## Frontend setup
+
+Exit the `yaptide/` directory in the 4th terminal:
+
+```bash
+cd ..
+```
+
+Clone the frontend repo:
+
+```bash
+git clone https://github.com/yaptide/ui.git
+```
+
+Navigate to the `ui` directory:
+
+```bash
+cd ui
+```
+
+Pull the [converter](https://github.com/yaptide/converter) submodule. 
+The converter is a standalone Python package that translates the editor's JSON project format 
+into native input files for simulation engines:
+
+```bash
+git submodule update --init --recursive
+```
+
+Install frontend dependencies:
+
+```bash
+npm install
+```
+
+Create a `.env` file in the `ui/` directory:
+
+```bash title="ui/.env"
+REACT_APP_BACKEND_URL=http://localhost:5000
+```
+
+## Start the frontend
+
+```bash
+npm run start
+```
+
+Open **http://localhost:3000**. Log in with the credentials you created (username: `admin`, password: `password`). The setup is complete now. The page reloads on edits.
+
+:::caution
+Access both frontend and backend using the **same domain** — either both `localhost` or both `127.0.0.1`. Mixing them breaks cookie-based authentication (`SameSite=Lax` policy).
+:::
+
+## Running tests
+
+For backend tests run the following command from the `yaptide/` directory:
+
+<Tabs>
+<TabItem label="Linux">
+
+```bash
+poetry run pytest
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+On Windows, run tests one by one:
+
+```powershell
+Get-ChildItem -Path "tests" -Filter "test_*.py" -Recurse | foreach { poetry run pytest $_.FullName }
+```
+
+</TabItem>
+</Tabs>
+
+For frontend tests, run the following command from the `ui/` directory:
+
+```bash
+npm run test
+```
+
+## Code formatting
+
+The backend uses `yapf` for code formatting via pre-commit hooks:
+
+```bash
+poetry run pre-commit install
+```
+
+After installing, hooks run automatically on every `git commit`. If a hook fails:
+
+1. The commit is aborted
+2. Some hooks auto-fix files (like `yapf`) — just commit again
+3. Other issues are reported in the terminal for manual fixing
+
+To run all hooks manually:
+
+```bash
+pre-commit run --all-files
+```
+
+Frontend uses `prettier` for formatting, run it with:
+
+```bash
+npm run format
+```

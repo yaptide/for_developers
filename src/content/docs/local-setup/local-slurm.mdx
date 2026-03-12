@@ -1,0 +1,24 @@
+---
+title: Local Setup — SLURM
+description: Run the YAPTIDE backend locally with Keycloak authentication for SLURM integration development.
+---
+
+This guide covers a full local setup with Keycloak authentication — required for SLURM job submission.
+It builds on the [Celery worker setup](/for_developers/local-setup/local-celery/) and adds Keycloak for both the backend and frontend.
+
+## When to use this setup
+
+| Scenario                                   | Recommended setup                                                          |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| Frontend / Geant4 in-browser only          | [Local Frontend Demo](/for_developers/local-setup/local-frontend-demo/)              |
+| Full stack with SHIELD-HIT12A or FLUKA     | [Local Celery](/for_developers/local-setup/local-celery/)                            |
+| Full stack with SLURM cluster              | **This page**                                                              |
+
+:::tip
+If you don't need hot-reload, the [Docker Setup](/for_developers/docker-setup/docker-slurm/)
+is simpler — no dependency management and easier teardown.
+:::
+
+:::caution[Work in Progress]
+  This page is not yet complete — we are still working on the SLURM integration and will update this guide once it's ready. In the meantime, see the [Local — Celery](/for_developers/local-setup/local-celery/) guide for the Celery setup.
+:::

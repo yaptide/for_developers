@@ -1,0 +1,81 @@
+---
+title: Frontend Demo — Local
+description: Run YAPTIDE entirely in the browser using demo mode — no backend required.
+---
+
+In demo mode, YAPTIDE runs entirely in the browser.
+Geant4 is compiled to WebAssembly and executes locally — no backend, no login, no internet connection needed after the initial load.
+
+## When to use this setup
+
+| Scenario                                   | Recommended setup                                                          |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| Frontend / Geant4 in-browser only          | **This page**                                                              |
+| Full stack with SHIELD-HIT12A or FLUKA     | [Local Celery](/for_developers/local-setup/local-celery/)                            |
+| Full stack with SLURM cluster              | [Local SLURM](/for_developers/local-setup/local-slurm/)                              |
+
+:::tip
+If you don't need hot-reload, the [Docker Setup](/for_developers/docker-setup/docker-frontend-demo/)
+is simpler — no dependency management and easier teardown.
+:::
+
+## Prerequisites
+
+- **Node.js 20+** with npm
+- **Python 3.9+** with pip and venv — needed to build the converter into a Pyodide/WebAssembly module
+- **Git**
+
+## Setup
+
+Clone the frontend repo:
+
+```bash
+git clone https://github.com/yaptide/ui.git
+```
+
+Navigate to the `ui` directory:
+
+```bash
+cd ui
+```
+
+Pull the [converter](https://github.com/yaptide/converter) submodule. 
+The converter is a standalone Python package that translates the editor's JSON project format 
+into native input files for simulation engines:
+
+```bash
+git submodule update --init --recursive
+```
+
+Install frontend dependencies:
+
+```bash
+npm install
+```
+
+## Start demo mode
+
+```bash
+npm run start-demo
+```
+
+Open **http://localhost:3000/web_dev**.
+
+You get the full editor experience — geometry, beam, scoring, input file generation — plus Geant4 WebAssembly for in-browser simulation. No login required.
+
+## Production build
+
+```bash
+npm run build-demo
+```
+
+Output goes to `build/`.
+
+## Useful commands
+
+| Command              | Description                     |
+| -------------------- | ------------------------------- |
+| `npm run start-demo` | Demo mode (no backend)          |
+| `npm run build-demo` | Production build with demo mode |
+| `npm run format`     | Run code formatter              |
+| `npm run test`       | Run tests in watch mode         |
