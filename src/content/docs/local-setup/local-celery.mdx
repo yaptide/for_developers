@@ -102,27 +102,14 @@ This worker picks up simulation jobs from the queue and runs the simulator. It n
 <TabItem label="Linux">
 
 ```bash
-PATH=$PATH:bin \
-BACKEND_INTERNAL_URL=http://127.0.0.1:5000 \
-CELERY_BROKER_URL=redis://127.0.0.1:6379/0 \
-CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 \
-poetry run celery \
-  --app yaptide.celery.simulation_worker worker \
-  --events -P eventlet \
-  --hostname yaptide-simulation-worker \
-  --queues simulations \
-  --loglevel=debug
+PATH=$PATH:bin BACKEND_INTERNAL_URL=http://127.0.0.1:5000 CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run celery --app yaptide.celery.simulation_worker worker --events -P eventlet --hostname yaptide-simulation-worker --queues simulations --loglevel=debug
 ```
 
 </TabItem>
 <TabItem label="Windows (PowerShell)">
 
 ```powershell
-$Env:PATH += ";" + (Join-Path -Path (Get-Location) -ChildPath "bin")
-$env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"
-$env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
-$env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"
-poetry run celery --app yaptide.celery.simulation_worker worker --events -P eventlet --hostname yaptide-simulation-worker --queues simulations --loglevel=debug
+$Env:PATH += ";" + (Join-Path -Path (Get-Location) -ChildPath "bin"); $env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run celery --app yaptide.celery.simulation_worker worker --events -P eventlet --hostname yaptide-simulation-worker --queues simulations --loglevel=debug
 ```
 
 </TabItem>
@@ -142,27 +129,14 @@ The helper worker handles post-processing tasks (collecting results, cleanup). O
 <TabItem label="Linux">
 
 ```bash
-FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///db.sqlite \
-BACKEND_INTERNAL_URL=http://127.0.0.1:5000 \
-CELERY_BROKER_URL=redis://127.0.0.1:6379/0 \
-CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 \
-poetry run celery \
-  --app yaptide.utils.helper_worker worker \
-  --events \
-  --hostname yaptide-helper-worker \
-  --queues helper \
-  --loglevel=debug
+FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///db.sqlite BACKEND_INTERNAL_URL=http://127.0.0.1:5000 CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run celery --app yaptide.utils.helper_worker worker --events --hostname yaptide-helper-worker --queues helper --loglevel=debug
 ```
 
 </TabItem>
 <TabItem label="Windows (PowerShell)">
 
 ```powershell
-$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"
-$env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"
-$env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
-$env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"
-poetry run celery --app yaptide.utils.helper_worker worker --events --hostname yaptide-helper-worker --queues helper --loglevel=debug
+$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"; $env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run celery --app yaptide.utils.helper_worker worker --events --hostname yaptide-helper-worker --queues helper --loglevel=debug
 ```
 
 </TabItem>
@@ -176,24 +150,14 @@ Open a third backend terminal and go to the `yaptide/` directory. Run:
 <TabItem label="Linux">
 
 ```bash
-FLASK_SQLALCHEMY_ECHO=True \
-FLASK_USE_CORS=True \
-FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite" \
-CELERY_BROKER_URL=redis://127.0.0.1:6379/0 \
-CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 \
-poetry run flask --debug --app yaptide.application run
+FLASK_SQLALCHEMY_ECHO=True FLASK_USE_CORS=True FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite" CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run flask --debug --app yaptide.application run
 ```
 
 </TabItem>
 <TabItem label="Windows (PowerShell)">
 
 ```powershell
-$env:FLASK_SQLALCHEMY_ECHO="True"
-$env:FLASK_USE_CORS="True"
-$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"
-$env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
-$env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"
-poetry run flask --debug --app yaptide.application run
+$env:FLASK_SQLALCHEMY_ECHO="True"; $env:FLASK_USE_CORS="True"; $env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run flask --debug --app yaptide.application run
 ```
 
 </TabItem>
@@ -215,16 +179,14 @@ Before logging in from the frontend, you need to create a user in the database. 
 <TabItem label="Linux">
 
 ```bash
-FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///instance/db.sqlite" \
-poetry run yaptide/admin/db_manage.py add-user admin --password password
+FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///instance/db.sqlite" poetry run yaptide/admin/db_manage.py add-user admin --password password
 ```
 
 </TabItem>
 <TabItem label="Windows (PowerShell)">
 
 ```powershell
-$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///instance/db.sqlite"
-poetry run yaptide\admin\db_manage.py add-user admin --password password
+$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///instance/db.sqlite"; poetry run yaptide\admin\db_manage.py add-user admin --password password
 ```
 
 </TabItem>
