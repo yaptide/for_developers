@@ -62,27 +62,53 @@ poetry install
 
 ### 2. Download simulator binaries
 
-YAPTIDE stores simulator binaries on S3 storage. The demo version of SHIELD-HIT12A is freely available:
+YAPTIDE stores licensed simulator binaries on S3-compatible object storage. The `download-shieldhit` command has two modes depending on whether S3 credentials are provided:
+
+- **Without S3 credentials** (default demo mode): downloads the freely available SHIELD-HIT12A demo binary directly from the project website. No configuration needed.
+- **With S3 credentials + `--decrypt` flag**: downloads the full licensed binary from your S3 bucket and decrypts it using the configured encryption key.
 
 <Tabs syncKey="os">
-<TabItem label="Linux">
+  <TabItem label="Linux">
+    ```bash
+    poetry run yaptide/admin/simulators.py download-shieldhit --dir bin
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    poetry run yaptide\admin\simulators.py download-shieldhit --dir bin
+    ```
+  </TabItem>
+</Tabs>
 
-```bash
-poetry run yaptide/admin/simulators.py download-shieldhit --dir bin
+To use S3 (for the full licensed version), create a `.env` file in the project root with the following variables:
+
+```env
+S3_ENDPOINT=https://your-s3-endpoint.com
+S3_ACCESS_KEY=your-access-key
+S3_SECRET_KEY=your-secret-key
+S3_ENCRYPTION_PASSWORD=your-encryption-password
+S3_ENCRYPTION_SALT=your-encryption-salt
+S3_SHIELDHIT_BUCKET=your-bucket-name
+S3_SHIELDHIT_KEY=shieldhit-filename.tar.gz
 ```
 
-</TabItem>
-<TabItem label="Windows (PowerShell)">
+Then run the download with S3 and decryption enabled:
 
-```powershell
-poetry run yaptide\admin\simulators.py download-shieldhit --dir bin
-```
-
-</TabItem>
+<Tabs syncKey="os">
+  <TabItem label="Linux">
+    ```bash
+    poetry run yaptide/admin/simulators.py download-shieldhit --dir bin --decrypt
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    poetry run yaptide\admin\simulators.py download-shieldhit --dir bin --decrypt
+    ```
+  </TabItem>
 </Tabs>
 
 :::note
-The full (licensed) versions of SHIELD-HIT12A and FLUKA are encrypted. The demo download gives you a freely usable binary for development.
+The free demo binary is sufficient for development and testing. The full licensed version of SHIELD-HIT12A (and FLUKA) requires S3 access and an encryption key — contact your institution or the SHIELD-HIT12A team for access.
 :::
 
 ### 3. Start Redis
