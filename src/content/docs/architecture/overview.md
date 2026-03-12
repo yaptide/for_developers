@@ -62,7 +62,7 @@ YAPTIDE is composed of **three repositories** that work together to provide a co
 
 ### Backend (`yaptide` repository)
 
-The backend is a **Flask 3.1** API server with **Celery 5.5** for async task execution and **PostgreSQL 16** for persistence.
+The backend is a **Flask** API server with **Celery** for async task execution and **PostgreSQL** for persistence.
 
 - **REST API** — Handles authentication, job submission, status polling, and result retrieval.
 - **Simulation Worker** — Celery worker that runs simulator binaries (SHIELD-HIT12A, FLUKA) in temporary directories, monitors progress, and posts updates back to Flask.
@@ -71,7 +71,7 @@ The backend is a **Flask 3.1** API server with **Celery 5.5** for async task exe
 
 ### UI (`ui` repository)
 
-The frontend is a **React 19** single-page application built with **Three.js** for 3D visualization and **MUI** for the interface. It runs entirely in the browser.
+The frontend is a **React** single-page application built with **Three.js** for 3D visualization and **MUI** for the interface. It runs entirely in the browser.
 
 - **3D Editor** — CSG-based geometry builder with a 4-way split viewport (XY, XZ, YZ, perspective). Users place figures (boxes, cylinders, spheres), define boolean zones, assign materials, and configure detectors.
 - **Pyodide Converter** — The `yaptide-converter` Python package compiled to WebAssembly via Pyodide, running in a Web Worker. Converts editor JSON to simulator input files without a server round-trip.
