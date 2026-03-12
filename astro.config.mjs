@@ -1,12 +1,14 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import react from "@astrojs/react";
 
 // https://astro.build/config
 export default defineConfig({
   site: "https://yaptide.github.io",
   base: "/for_developers",
   integrations: [
+    react(),
     starlight({
       title: "YAPTIDE Developers",
       tagline: "A web-based IDE for Monte Carlo particle transport simulations",
@@ -88,7 +90,7 @@ export default defineConfig({
           collapsed: true,
           items: [
             { label: "Overview", slug: "backend/overview" },
-            { label: "API Endpoints", slug: "backend/api-endpoints" },
+            { label: "API Reference", slug: "backend/api-reference" },
             { label: "Database", slug: "backend/database" },
             {
               label: "Simulation Lifecycle",

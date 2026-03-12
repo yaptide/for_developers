@@ -57,3 +57,108 @@ blockquote {
 	margin-right: 0.35rem;
 	margin-bottom: 0.35rem;
 }
+
+/* Swagger */
+/* Base text and backgrounds */
+.swagger-ui,
+.swagger-ui .opblock,
+.swagger-ui .opblock-summary,
+.swagger-ui input,
+.swagger-ui select,
+.swagger-ui textarea,
+.swagger-ui .info .title,
+.swagger-ui .scheme-container {
+  background-color: var(--sl-color-bg) !important;
+  color: var(--sl-color-text) !important;
+}
+
+/* All general text white */
+.swagger-ui p,
+.swagger-ui li,
+.swagger-ui table thead tr th,
+.swagger-ui table tbody tr td,
+.swagger-ui .opblock-summary-description,
+.swagger-ui .opblock-summary-path,
+.swagger-ui .opblock-description-wrapper p,
+.swagger-ui .response-col_status,
+.swagger-ui .response-col_description,
+.swagger-ui label,
+.swagger-ui .parameter__name,
+.swagger-ui .parameter__type,
+.swagger-ui .parameter__in,
+.swagger-ui span,
+.swagger-ui h1,
+.swagger-ui h2,
+.swagger-ui h3,
+.swagger-ui h4,
+.swagger-ui h5 {
+  color: var(--sl-color-text) !important;
+}
+
+/* Expanded block backgrounds */
+.swagger-ui .opblock-body,
+.swagger-ui .opblock-section,
+.swagger-ui .responses-wrapper,
+.swagger-ui .response,
+.swagger-ui .model-box,
+.swagger-ui section.models,
+.swagger-ui .model-container {
+  background-color: var(--sl-color-bg-nav) !important;
+}
+
+/* Input fields */
+.swagger-ui input[type=text],
+.swagger-ui textarea,
+.swagger-ui select {
+  background-color: var(--sl-color-bg) !important;
+  color: var(--sl-color-text) !important;
+  border-color: var(--sl-color-gray-5) !important;
+}
+
+/* Links */
+.swagger-ui a {
+  color: var(--sl-color-accent) !important;
+}
+
+/* Expanded operation block inner sections */
+.swagger-ui .opblock-section-header,
+.swagger-ui .opblock-section-header label,
+.swagger-ui .opblock-section-header span,
+.swagger-ui .opblock .opblock-section-header {
+  background-color: var(--sl-color-bg-nav) !important;
+  color: var(--sl-color-text) !important;
+}
+
+/* Parameters section background */
+.swagger-ui .parameters-container,
+.swagger-ui .parameters-col_description,
+.swagger-ui .parameters-col_name,
+.swagger-ui table.parameters {
+  background-color: var(--sl-color-bg-nav) !important;
+  color: var(--sl-color-text) !important;
+}
+
+/* The light grey expanded body */
+.swagger-ui .opblock-body pre.microlight,
+.swagger-ui .opblock-body pre,
+.swagger-ui textarea.curl {
+  background-color: var(--sl-color-bg) !important;
+  color: var(--sl-color-text) !important;
+}
+
+/* Try it out button area */
+.swagger-ui .btn-group,
+.swagger-ui .execute-wrapper {
+  background-color: var(--sl-color-bg-nav) !important;
+}
+
+/* Tab headers (Example Value / Schema) */
+.swagger-ui .tab li,
+.swagger-ui .tab li button {
+  color: var(--sl-color-text) !important;
+}
+
+/* Response mime type dropdown */
+.swagger-ui .response-control-media-type__accept-message {
+  color: var(--sl-color-text) !important;
+}
