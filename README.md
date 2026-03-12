@@ -22,6 +22,9 @@ git clone https://github.com/yaptide/for_developers.git
 2. **Install dependencies**
 ```bash
 cd for_developers
+```
+
+```bash
 npm install
 ```
 
