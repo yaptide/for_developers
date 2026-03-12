@@ -1,6 +1,6 @@
 # Yaptide developer documentation
 
-[](https://yaptide.github.io/for_developers/)
+[Yaptide developer site](https://yaptide.github.io/for_developers/)
 
 Welcome to the YAPTIDE developer documentation. This site is built with [Starlight](https://starlight.astro.build/) framework.
 
