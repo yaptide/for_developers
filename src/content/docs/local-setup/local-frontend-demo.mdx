@@ -26,15 +26,31 @@ Geant4 is compiled to WebAssembly and executes locally — no backend, no login,
 
 ## Setup
 
+Clone the frontend repo:
+
 ```bash
 git clone https://github.com/yaptide/ui.git
-cd ui
-git submodule update --init --recursive
-npm install
 ```
 
-`git submodule update` pulls the [converter](https://github.com/yaptide/converter) submodule.
-The build step compiles it into a WebAssembly module via Pyodide, which is why Python is required even for frontend-only work.
+Navigate to the `ui` directory:
+
+```bash
+cd ui
+```
+
+Pull the [converter](https://github.com/yaptide/converter) submodule. 
+The converter is a standalone Python package that translates the editor's JSON project format 
+into native input files for simulation engines:
+
+```bash
+git submodule update --init --recursive
+```
+
+Install frontend dependencies:
+
+```bash
+npm install
+```
 
 ## Start demo mode
 

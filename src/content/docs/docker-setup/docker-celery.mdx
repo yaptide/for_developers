@@ -24,9 +24,16 @@ This guide covers the **development** Docker setup — you get a production-like
 - **Docker Engine 20.10+**
 - **Git**
 
-## Step 1: Clone and start
+## Clone and start
+
+Clone the repository:
 ```bash
 git clone https://github.com/yaptide/yaptide.git
+```
+
+Navigate to the `yaptide/` directory:
+
+```bash
 cd yaptide
 ```
 
@@ -66,32 +73,45 @@ scripts/start_with_docker_develop.ps1
 </TabItem>
 </Tabs>
 
-The script detects your Docker version and uses the fastest available method automatically.
+There's two startup modes. 
+The fast mode has custom healthcheck frequency, but requires Docker Engine v25. 
+The slow mode is compatible with older Docker versions.
+The scripts detect your Docker version and use the fastest available startup mode automatically.
 
-## Step 2: Create a user
+## Create a user
 ```bash
 docker exec -w /usr/local/app/ yaptide_flask \
   ./yaptide/admin/db_manage.py add-user admin --password password
 ```
 
-## Step 3: Start the frontend
+## Start the frontend
 
 The backend API is available at **http://localhost:5000** (via NGINX). Clone the frontend repo in a separate terminal:
 
 ```bash
 git clone https://github.com/yaptide/ui.git
-cd ui
-git submodule update --init --recursive
 ```
 
-`git submodule update` pulls the [converter](https://github.com/yaptide/converter) submodule.
+Navigate to the `ui` directory:
+
+```bash
+cd ui
+```
+
+Pull the [converter](https://github.com/yaptide/converter) submodule. 
+The converter is a standalone Python package that translates the editor's JSON project format 
+into native input files for simulation engines:
+
+```bash
+git submodule update --init --recursive
+```
 
 Create a `.env` file in the `ui/` directory:
 ```bash title="ui/.env"
 REACT_APP_BACKEND_URL=http://localhost:5000
 ```
 
-Then run the following command from the `ui/` directory:
+Run the frontend container from the `ui/` directory:
 
 ```bash
 docker compose up
@@ -132,7 +152,7 @@ psql -h localhost -U yaptide_user -d yaptide_db
 # password: yaptide_password (default)
 ```
 
-Or use a GUI tool like pgAdmin.
+Or use a GUI tool like DataGrip or pgAdmin.
 
 ## Container overview
 
@@ -153,5 +173,12 @@ docker compose ps
 View logs:
 ```bash
 docker compose logs -f yaptide_flask
+```
+
+```bash
 docker compose logs -f yaptide_simulation_worker
+```
+
+```bash
+docker compose logs -f yaptide_helper_worker
 ```

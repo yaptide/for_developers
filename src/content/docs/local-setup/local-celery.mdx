@@ -42,13 +42,23 @@ You need **three terminals** for the backend, plus one for the frontend:
 
 ### 1. Clone and install dependencies
 
+Clone the repository:
+
 ```bash
 git clone https://github.com/yaptide/yaptide.git
-cd yaptide
-poetry install
 ```
 
-This installs all dependencies (main + test + docs) into a `.venv` directory in the project root.
+Navigate to the `yaptide/` directory:
+
+```bash
+cd yaptide
+```
+
+Install Python dependencies with Poetry. This will create a virtual environment in `.venv/` and install all required packages for the backend:
+
+```bash
+poetry install
+```
 
 ### 2. Download simulator binaries
 
@@ -222,12 +232,35 @@ poetry run yaptide\admin\db_manage.py add-user admin --password password
 
 ## Frontend setup
 
-Exit the `yaptide/` directory in the 4th terminal and run the following commands from the root directory:
+Exit the `yaptide/` directory in the 4th terminal:
+
+```bash
+cd ..
+```
+
+Clone the frontend repo:
 
 ```bash
 git clone https://github.com/yaptide/ui.git
+```
+
+Navigate to the `ui` directory:
+
+```bash
 cd ui
+```
+
+Pull the [converter](https://github.com/yaptide/converter) submodule. 
+The converter is a standalone Python package that translates the editor's JSON project format 
+into native input files for simulation engines:
+
+```bash
 git submodule update --init --recursive
+```
+
+Install frontend dependencies:
+
+```bash
 npm install
 ```
 
@@ -236,6 +269,8 @@ Create a `.env` file in the `ui/` directory:
 ```bash title="ui/.env"
 REACT_APP_BACKEND_URL=http://localhost:5000
 ```
+
+## Start the frontend
 
 ```bash
 npm run start

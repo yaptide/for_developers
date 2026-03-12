@@ -27,14 +27,31 @@ This is the setup deployed at [yaptide.github.io](https://yaptide.github.io). Th
 
 ## Setup
 
+Clone the repository:
+
 ```bash
 git clone https://github.com/yaptide/ui.git
-cd ui
-git submodule update --init --recursive
-docker compose up
 ```
 
-`git submodule update` pulls the [converter](https://github.com/yaptide/converter) submodule.
+Navigate to the `ui` directory:
+
+```bash
+cd ui
+```
+
+Pull the [converter](https://github.com/yaptide/converter) submodule. 
+The converter is a standalone Python package that translates the editor's JSON project format 
+into native input files for simulation engines:
+
+```bash
+git submodule update --init --recursive
+```
+
+Start the container:
+
+```bash
+docker compose up
+```
 
 The UI is then served at **http://localhost**.
 
