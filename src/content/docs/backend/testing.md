@@ -182,5 +182,5 @@ poetry run pre-commit run --all-files
 
 Hooks include:
 - **Ruff** — Python linting (and auto-fixes)
-- **Ruff format** — Python code formatting
+- `ruff-format` — Python code formatting
 - Standard pre-commit hooks (trailing whitespace, end of file, etc.)
