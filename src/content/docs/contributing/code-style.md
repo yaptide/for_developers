@@ -70,7 +70,16 @@ If you use VS Code, consider installing the **Ruff** extension and enabling form
 
 #### Example configuration (converter)
 
-The converter repo uses Ruff via pre-commit:
+The converter repo uses Ruff via pre-commit.
+
+For the up-to-date configuration, see [`.pre-commit-config.yaml` in the converter repo](https://github.com/yaptide/converter/blob/master/.pre-commit-config.yaml).
+
+This file defines the full pre-commit pipeline used in the converter, including:
+
+- File hygiene hooks (e.g. trailing whitespace, EOF newline)
+- Ruff linting (`ruff check`) with auto-fixes enabled
+- Ruff formatting (`ruff format`)
+- Repository-specific excludes (e.g. large generated/golden test outputs)
 
 ```yaml
 exclude: |
