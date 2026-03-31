@@ -310,7 +310,7 @@ poetry run pre-commit install
 After installing, hooks run automatically on every `git commit`. If a hook fails:
 
 1. The commit is aborted
-2. Some hooks auto-fix files (like Ruff) — just commit again
+2. Some hooks auto-fix files (for example, the `ruff check --fix` and `ruff format` hooks) — just commit again
 3. Other issues are reported in the terminal for manual fixing
 
 To run all hooks manually:
