@@ -207,6 +207,6 @@ poetry run pre-commit run --all-files
 ```
 
 Hooks include:
-- **YAPF** — Python code formatting
-- **isort** — import ordering
+- **Ruff** — Python linting (and auto-fixes)
+- **Ruff format** — Python code formatting
 - Standard file checks (trailing whitespace, end-of-file newline)

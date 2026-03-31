@@ -181,6 +181,6 @@ poetry run pre-commit run --all-files
 ```
 
 Hooks include:
-- **YAPF** — Python formatter (120-char line length)
-- **pycodestyle** — PEP 8 style checking
+- **Ruff** — Python linting (and auto-fixes)
+- **Ruff format** — Python code formatting
 - Standard pre-commit hooks (trailing whitespace, end of file, etc.)

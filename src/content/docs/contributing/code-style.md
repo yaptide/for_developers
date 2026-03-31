@@ -60,16 +60,55 @@ poetry run pre-commit install          # Install hooks (once)
 poetry run pre-commit run --all-files  # Run manually
 ```
 
-The `.pre-commit-config.yaml` typically includes:
+#### Tooling
 
-| Hook | Purpose |
-|---|---|
-| `yapf` | Code formatting |
-| `isort` | Import ordering |
-| `trailing-whitespace` | Remove trailing spaces |
-| `end-of-file-fixer` | Ensure newline at end of file |
-| `check-yaml` | Validate YAML files |
-| `check-merge-conflict` | Detect leftover merge markers |
+We use **Ruff** for both linting and formatting.
+
+#### Example configuration (converter)
+
+The converter repo uses Ruff via pre-commit:
+
+```yaml
+exclude: |
+  (?x)^(
+      tests/shieldhit/resources/expected_shieldhit_output/.*\.dat$|
+      tests/shieldhit/resources/expected_shieldhit_output_with_sobp_dat/.*\.dat$|
+      tests/shieldhit/test_shieldhit_config_mappings\.py$
+  )
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-case-conflict
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.7
+    hooks:
+      - id: ruff
+        name: ruff check
+        args: [ --fix ]
+      - id: ruff-format
+        name: ruff format
+
+```
+
+:::note
+Some repositories may include additional checks (e.g. YAML validation, merge-conflict markers). Ruff remains the formatter/linter.
+:::
+
+#### Git blame after reformatting
+
+Large automated refactors (like a formatter migration) can make `git blame` noisy. Repositories may include a `.git-blame-ignore-revs` file listing the reformat commits.
+
+To enable it in your local clone:
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
 
 ## TypeScript (Frontend)
 
