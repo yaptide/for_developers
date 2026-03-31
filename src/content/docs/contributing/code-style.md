@@ -64,6 +64,10 @@ poetry run pre-commit run --all-files  # Run manually
 
 We use **Ruff** for both linting and formatting.
 
+#### VS Code (format on save)
+
+If you use VS Code, consider installing the **Ruff** extension and enabling format-on-save so your editor runs `ruff format` automatically.
+
 #### Example configuration (converter)
 
 The converter repo uses Ruff via pre-commit:
