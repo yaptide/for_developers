@@ -2,6 +2,7 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import react from "@astrojs/react";
+import starlightClientMermaid from "@pasqal-io/starlight-client-mermaid";
 
 // https://astro.build/config
 export default defineConfig({
@@ -25,6 +26,7 @@ export default defineConfig({
       editLink: {
         baseUrl: "https://github.com/yaptide/for_developers/edit/main/",
       },
+      plugins: [starlightClientMermaid()],
       sidebar: [
         {
           label: "Home",

@@ -13,6 +13,7 @@
     "@astrojs/react": "^5.0.1",
     "@astrojs/sitemap": "3.7.1",
     "@astrojs/starlight": "^0.38.2",
+    "@pasqal-io/starlight-client-mermaid": "^0.1.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "astro": "^6.0.8",
