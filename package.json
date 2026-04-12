@@ -10,7 +10,7 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/react": "^5.0.2",
+    "@astrojs/react": "^5.0.3",
     "@astrojs/sitemap": "3.7.2",
     "@astrojs/starlight": "^0.38.3",
     "@types/react": "^19.2.14",
