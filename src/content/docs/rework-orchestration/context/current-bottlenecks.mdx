@@ -184,3 +184,14 @@ To replace assumptions with hard numbers, run these measurements next:
 5. Failure-injection tests for `/tasks` and `/results` posting resilience.
 
 These measurements will feed ADR option comparisons and benchmark-based design choices in Phase 2 and Phase 3.
+
+Detailed execution plan: [Phase 1 Profiling Plan](/for_developers/rework-orchestration/research/phase-1-profiling-plan/)
+
+Recommended default tooling:
+
+- OpenTelemetry + Prometheus + Grafana for stage timing and trace correlation
+- Locust for concurrent workload generation
+- py-spy for merge CPU profiling
+- Memray for merge memory profiling
+- redis_exporter + Prometheus for Redis memory/network telemetry
+- Toxiproxy for deterministic `/tasks` and `/results` failure injection

@@ -1,0 +1,177 @@
+---
+title: Phase 1 Profiling Plan
+description: Reproducible measurement runbook for orchestration timing, payload, merge, Redis, and resilience benchmarks.
+---
+
+This runbook turns Phase 1 profiling goals into a repeatable protocol that can be reused for ADR comparisons in Phase 2 and design validation in Phase 3.
+
+Related context: [Current Bottlenecks](/for_developers/rework-orchestration/context/current-bottlenecks/)
+
+## Required Outputs
+
+Produce these artifacts from the same test matrix:
+
+1. End-to-end timing percentiles for run, merge, and `/results` persistence.
+2. Payload size distributions for per-task and merged estimator JSON.
+3. Merge CPU hotspot evidence and memory peak measurements for task counts 4, 8, 16, and 32.
+4. Redis memory and network telemetry under concurrent workloads.
+5. Failure-injection resilience results for `/tasks` and `/results` posting.
+
+## Recommended Tool Stack
+
+| Measurement goal                       | Recommended tool(s)                   | Why this is a good fit                                                |
+| -------------------------------------- | ------------------------------------- | --------------------------------------------------------------------- |
+| Stage timings and service latency      | OpenTelemetry + Prometheus + Grafana  | One source for traces plus percentile metrics and historical trends   |
+| Concurrent workload generation         | Locust                                | Scriptable and repeatable load patterns for matrix testing            |
+| Merge CPU profiling                    | py-spy                                | Low overhead sampling and flamegraph output for live worker processes |
+| Merge memory profiling                 | Memray                                | Detailed allocation and peak usage visibility                         |
+| Redis memory/network/command telemetry | redis_exporter + Prometheus + Grafana | Standard metrics pipeline for broker/backend behavior                 |
+| Network/transport failure injection    | Toxiproxy                             | Deterministic latency, loss, and disconnect scenarios                 |
+
+## Baseline Test Matrix
+
+Start with one representative simulation input and vary only orchestration pressure.
+
+| Scenario | Concurrent jobs | Tasks per job | Fault mode | Repetitions |
+| -------- | --------------- | ------------- | ---------- | ----------- |
+| S1       | 1               | 4             | none       | 10          |
+| S2       | 1               | 8             | none       | 10          |
+| S3       | 1               | 16            | none       | 10          |
+| S4       | 1               | 32            | none       | 10          |
+| S5       | 5               | 8             | none       | 10          |
+| S6       | 10              | 8             | none       | 10          |
+| S7       | 10              | 8             | latency    | 10          |
+| S8       | 10              | 8             | drop/retry | 10          |
+
+Use S1-S6 for throughput/latency characterization and S7-S8 for resilience behavior.
+
+## Instrumentation Plan
+
+### 1) End-to-End Timings per Stage
+
+Instrument three stage boundaries in backend orchestration:
+
+- run stage: task execution start to completion
+- merge stage: merge callback start to completion
+- persistence stage: `/results` receive to durable DB write completion
+
+Recommended metrics:
+
+- `yaptide_stage_duration_seconds` (histogram)
+  - labels: `stage=run|merge|persist`, `success=true|false`, `task_count_bucket`
+- `yaptide_job_duration_seconds` (histogram)
+- `yaptide_stage_events_total` (counter)
+
+Guidance:
+
+- keep labels low-cardinality; do not attach unique `job_id` as metric label
+- attach `job_id` in tracing spans, not in Prometheus labels
+
+### 2) Payload Size Telemetry
+
+Capture payload bytes at key boundaries:
+
+- per-task estimator JSON before transport
+- merged estimator JSON before `/results` POST
+- `/tasks` and `/results` request and response body sizes
+
+Recommended metrics:
+
+- `yaptide_payload_bytes` (histogram)
+  - labels: `kind=task_estimator|merged_estimator|tasks_request|results_request|results_response`
+- `yaptide_http_request_duration_seconds` (histogram)
+  - labels: `route=/tasks|/results`, `method=POST`, `status_code`
+
+Expected output:
+
+- percentiles and max sizes by scenario
+- scatter: payload size vs endpoint latency
+
+### 3) Merge CPU and Memory Profiling
+
+For each task count (4, 8, 16, 32), execute merge repeatedly with realistic fixtures.
+
+Suggested commands:
+
+```bash
+py-spy record -o profiles/merge-16.svg --pid "$SIMULATION_WORKER_PID" --duration 60
+python -m memray run -o profiles/merge-16.bin scripts/profile_merge.py --tasks 16
+python -m memray summary profiles/merge-16.bin
+```
+
+Track per scenario:
+
+- merge wall time: p50/p95
+- CPU: top hotspots and cumulative percentage
+- memory: peak RSS and top allocation sources
+
+### 4) Redis Memory and Network Telemetry
+
+Monitor Redis while running S1-S8:
+
+- memory usage (`used_memory`, `used_memory_rss`)
+- network throughput (`instantaneous_input_kbps`, `instantaneous_output_kbps`)
+- pressure indicators (`blocked_clients`, `evicted_keys`)
+- command rates and latency where available
+
+Required correlation:
+
+- overlay Redis telemetry with stage latency panels for the same run window
+- identify inflection points when increasing concurrency or task counts
+
+### 5) Failure-Injection Tests for `/tasks` and `/results`
+
+Inject deterministic failures between workers and backend endpoints:
+
+- added latency (for example +250 ms, +1 s)
+- packet loss (for example 2%, 5%)
+- temporary disconnects
+
+Validate resilience behavior:
+
+- retries occur as expected
+- no duplicated final writes
+- eventual consistency of terminal simulation status
+- bounded recovery time after link restoration
+
+Record per test:
+
+- success/failure
+- retries attempted
+- recovery latency
+- final state correctness
+
+## Execution Protocol
+
+Use this run protocol for reproducibility:
+
+1. Freeze code revision (record git SHAs for backend, UI, docs notes).
+2. Use fixed dataset and simulator settings for all scenarios.
+3. Warm up services once before recording metrics.
+4. Run scenario matrix in randomized order to reduce temporal bias.
+5. Export dashboards/traces/raw CSV after each scenario group.
+6. Store artifacts under a date-stamped directory.
+
+Suggested artifact structure:
+
+```text
+rework-orchestration/research/phase-1-results/YYYY-MM-DD/
+  timings/
+  payloads/
+  merge-profiles/
+  redis/
+  resilience/
+  summary.md
+```
+
+## Phase 1 Exit Criteria
+
+Phase 1 can be considered complete when all are true:
+
+1. Timing percentiles are available for run, merge, and persistence across S1-S8.
+2. Payload-size and endpoint-latency relationship is quantified.
+3. Merge CPU and memory hotspots are evidenced for 4, 8, 16, and 32 tasks.
+4. Redis saturation behavior is visible under concurrent load.
+5. Failure-injection results show current retry/idempotency limits and recovery characteristics.
+
+The output of this runbook becomes input evidence for ADR option scoring in Phase 2.
