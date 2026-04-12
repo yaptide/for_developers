@@ -76,10 +76,10 @@ Direct path and batch path both convert estimator outputs into JSON structures b
 
 Pseudo-complexity:
 
-- $O(T \times P \times V)$ where:
-- $T$ is number of completed tasks,
-- $P$ is number of pages,
-- $V$ is values per page.
+- O(T _ P _ V), where:
+- T is number of completed tasks,
+- P is number of pages,
+- V is values per page.
 
 With the measured fixture shape (`98,892` values) and many tasks, per-value Python loop overhead becomes significant.
 
