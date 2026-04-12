@@ -44,7 +44,7 @@ export default defineConfig({
             {
               label: "Full Stack - SLURM",
               slug: "local-setup/local-slurm",
-            }
+            },
           ],
         },
         {
@@ -74,6 +74,29 @@ export default defineConfig({
               slug: "architecture/project-json-schema",
             },
             { label: "Authentication Model", slug: "architecture/auth-model" },
+          ],
+        },
+        {
+          label: "Orchestration Rework",
+          collapsed: false,
+          items: [
+            { label: "Vision", slug: "rework-orchestration" },
+            {
+              label: "Context & Constraints",
+              autogenerate: { directory: "rework-orchestration/context" },
+            },
+            {
+              label: "Architecture Decisions",
+              autogenerate: { directory: "rework-orchestration/adr" },
+            },
+            {
+              label: "Design Documents",
+              autogenerate: { directory: "rework-orchestration/design" },
+            },
+            {
+              label: "Research Sessions",
+              autogenerate: { directory: "rework-orchestration/research" },
+            },
           ],
         },
         {

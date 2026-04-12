@@ -1,0 +1,52 @@
+---
+title: Orchestration Rework
+description: Vision, goals, and scope for redesigning simulation job orchestration.
+---
+
+## Vision
+
+This effort defines and documents a new orchestration architecture for simulation jobs that is faster, more observable, and production-ready across both HPC and cloud deployments.
+
+The design process is intentionally structured so it can be reused for future cross-repository architecture reworks.
+
+## Goals
+
+1. Real-time partial results so researchers can inspect intermediate outputs while a simulation is still running.
+2. Horizontal scalability so a single simulation job can span multiple machines in parallel.
+3. Optimized result transport using S3-compatible object storage and efficient binary formats instead of large JSON payloads through the message broker.
+4. Optimized result merge by replacing pure-Python averaging with high-performance numerical libraries.
+5. Enhanced stability and control through production-grade retry logic, centralized logging, and robust error handling.
+
+## Scope
+
+Primary repositories in scope:
+
+- [yaptide/yaptide](https://github.com/yaptide/yaptide)
+- [yaptide/for_developers](https://github.com/yaptide/for_developers)
+
+Possible secondary changes:
+
+- [yaptide/deploy](https://github.com/yaptide/deploy)
+- [yaptide/ui](https://github.com/yaptide/ui)
+
+## Process Structure
+
+This section follows a reusable pattern:
+
+- context: as-is architecture, bottlenecks, constraints, and user requirements
+- adr: decision records with explicit status changes
+- design: implementation-ready design documents
+- research: AI-assisted investigation logs for auditability
+
+## Phase 0 Deliverables
+
+- Bootstrap the documentation structure under this section.
+- Add the ADR registry and template.
+- Wire sidebar navigation for the full process structure.
+- Create cross-repository tracking artifacts for implementation planning.
+
+## Related Issues
+
+- [for_developers#45](https://github.com/yaptide/for_developers/issues/45)
+- [for_developers#48](https://github.com/yaptide/for_developers/issues/48)
+- [for_developers#8](https://github.com/yaptide/for_developers/issues/8)
