@@ -1,0 +1,165 @@
+---
+title: Open Questions and Estimation Log
+description: Discovery backlog and structured estimate capture for orchestration rework decisions.
+---
+
+This page tracks open discovery questions that should be answered before locking Phase 2/3 architecture choices.
+
+Status values:
+
+- Open
+- In progress
+- Answered
+- Needs measurement
+
+Response fields to fill for each question:
+
+- Status (Open/In progress/Answered/Needs measurement): Open
+- Notes:
+
+## A) User Workflow and Product Expectations
+
+1. What is an acceptable time-to-first-insight for a typical user run?
+   - Status (Open/In progress/Answered/Needs measurement): Open
+   - Notes:
+
+2. What is an acceptable total turnaround time for small, medium, and large simulations?
+   - Status (Open/In progress/Answered/Needs measurement): Open
+   - Notes:
+
+3. Which intermediate results are most valuable to users during RUNNING status?
+   - Status (Open/In progress/Answered/Needs measurement): Open
+   - Notes:
+
+4. How much partial-result staleness is acceptable (for example 10 s vs 60 s)?
+   - Status (Open/In progress/Answered/Needs measurement): Open
+   - Notes:
+
+5. Do users prefer fewer high-confidence updates or frequent best-effort updates?
+   - Status (Open/In progress/Answered/Needs measurement): Open
+   - Notes:
+
+6. Which user personas need queue predictions versus detailed task-level telemetry?
+   - Status (Open/In progress/Answered/Needs measurement): Open
+   - Notes:
+
+## B) HPC Connectivity and Queue Characteristics
+
+7. What is the typical time needed to connect to target HPC clusters (for example Ares)?
+   - Status (Open/In progress/Answered/Needs measurement): Open
+   - Notes:
+
+8. What is the p50/p95 time jobs spend in HPC waiting queues by partition/class?
+   - Status (Open/In progress/Answered/Needs measurement): Open
+   - Notes:
+
+9. How often do HPC connection/setup failures occur, and what are top failure modes?
+   - Status (Open/In progress/Answered/Needs measurement): Open
+   - Notes:
+
+10. Are there cluster-side limits that strongly affect orchestration design (rate limits, job caps, walltime constraints)?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+11. Which queue-delay patterns are predictable enough to model in UI ETA messaging?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+## C) Parallelism and Concurrency Demand
+
+12. How many parallel tasks per simulation do users typically want on HPC?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+13. What is the upper bound users realistically request for tasks per simulation?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+14. How many simulations in parallel does a single user expect to run?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+15. How many concurrent active users should the system support in normal and peak periods?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+16. What fairness model is expected when concurrent user demand exceeds capacity?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+## D) Result Shape and Data Volume
+
+17. How long does it take to dump a single binary result artifact to disk (p50/p95)?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+18. How many result files are produced per simulation for each supported simulator?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+19. How many pages are typically present per result file?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+20. What are typical and worst-case per-page array sizes?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+21. What are typical and worst-case merged-result payload sizes?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+22. Which result subsets are most frequently viewed first by users?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+## E) Reliability, Recovery, and Operations
+
+23. What data loss tolerance is acceptable for task progress updates?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+24. Is at-least-once or exactly-once semantics required for final result persistence?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+25. What recovery time objective is acceptable after transient broker/network outages?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+26. Which retries should be automatic versus operator-controlled?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+27. What observability minimum is required for incident triage (logs, traces, metrics)?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+## F) Decision and Rollout Constraints
+
+28. Which changes must be backward-compatible with current API contracts?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+29. What migration windows are acceptable for infrastructure-affecting changes?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+30. What evidence threshold is required before adopting a new transport or merge approach?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+31. Which design options are blocked without domain input from HPC operators or power users?
+    - Status (Open/In progress/Answered/Needs measurement): Open
+    - Notes:
+
+## Estimation Inputs Needed from Domain Experts
+
+The following inputs are required to turn these open questions into concrete ADR comparisons:
+
+1. HPC connection timing distributions for each target cluster (especially Ares).
+2. Queue waiting-time distributions by queue/partition and time-of-day.
+3. Typical and peak desired parallelism per simulation.
+4. Typical and peak number of simultaneous simulations per user.
+5. Result dump timings and file/page cardinality for representative scenarios.
+6. Practical upper bounds considered acceptable by users for time-to-first-insight and time-to-completion.
