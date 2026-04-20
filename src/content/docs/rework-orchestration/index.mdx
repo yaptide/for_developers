@@ -11,11 +11,39 @@ The design process is intentionally structured so it can be reused for future cr
 
 ## Goals
 
-1. Real-time partial results so researchers can inspect intermediate outputs while a simulation is still running.
-2. Horizontal scalability so a single simulation job can span multiple machines in parallel.
-3. Optimized result transport using S3-compatible object storage and efficient binary formats instead of large JSON payloads through the message broker.
-4. Optimized result merge by replacing pure-Python averaging with high-performance numerical libraries.
-5. Enhanced stability and control through production-grade retry logic, centralized logging, and robust error handling.
+1. Researchers can inspect meaningful intermediate results before a full simulation completes.
+2. Users can run larger simulations with predictable turnaround times.
+3. Users can run multiple simulations concurrently without unstable platform behavior.
+4. Operators can understand system state quickly and diagnose failures with confidence.
+5. The platform behaves reliably under transient infrastructure failures and recovers gracefully.
+6. Architecture decisions are driven by measured workload characteristics, not assumptions.
+
+## User Stories
+
+1. As a researcher, I want to see early simulation signals so I can stop bad runs quickly.
+2. As a researcher, I want ETA confidence so I can plan my analysis workflow.
+3. As a researcher, I want to run multiple parameter sweeps at once so I can compare outcomes faster.
+4. As a researcher, I want progress visibility for each task so I can understand where time is spent.
+5. As a researcher, I want consistent behavior between local and HPC execution paths.
+6. As a team lead, I want predictable cluster usage so I can plan shared resource allocation.
+7. As an operator, I want to detect degraded system behavior before users are blocked.
+8. As an operator, I want retry and failure semantics to be explicit so incidents are easier to resolve.
+9. As a product owner, I want clear performance baselines so architectural options can be compared fairly.
+
+## Discovery Backlog
+
+The full discovery backlog (31 open questions with status, owner, confidence, and estimate fields) lives in a dedicated page:
+
+- [Open Questions and Estimation Log](/for_developers/rework-orchestration/context/open-questions/)
+
+Priority unresolved topics for near-term discussion:
+
+1. Time-to-first-insight target for users during running jobs.
+2. Typical and p95 HPC queue wait by partition/class (for example Ares).
+3. Expected parallel tasks per simulation and parallel simulations per user.
+4. Typical dump time and result cardinality (files and pages per simulation).
+5. Required reliability semantics for final result persistence.
+6. Evidence threshold needed before selecting transport/merge architecture options.
 
 ## Scope
 
