@@ -2,6 +2,7 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import react from "@astrojs/react";
+import starlightClientMermaid from "@pasqal-io/starlight-client-mermaid";
 
 // https://astro.build/config
 export default defineConfig({
@@ -25,6 +26,7 @@ export default defineConfig({
       editLink: {
         baseUrl: "https://github.com/yaptide/for_developers/edit/main/",
       },
+      plugins: [starlightClientMermaid()],
       sidebar: [
         {
           label: "Home",
@@ -44,7 +46,7 @@ export default defineConfig({
             {
               label: "Full Stack - SLURM",
               slug: "local-setup/local-slurm",
-            }
+            },
           ],
         },
         {
@@ -74,6 +76,29 @@ export default defineConfig({
               slug: "architecture/project-json-schema",
             },
             { label: "Authentication Model", slug: "architecture/auth-model" },
+          ],
+        },
+        {
+          label: "Orchestration Rework",
+          collapsed: false,
+          items: [
+            { label: "Vision", slug: "rework-orchestration" },
+            {
+              label: "Context & Constraints",
+              autogenerate: { directory: "rework-orchestration/context" },
+            },
+            {
+              label: "Architecture Decisions",
+              autogenerate: { directory: "rework-orchestration/adr" },
+            },
+            {
+              label: "Design Documents",
+              autogenerate: { directory: "rework-orchestration/design" },
+            },
+            {
+              label: "Research Sessions",
+              autogenerate: { directory: "rework-orchestration/research" },
+            },
           ],
         },
         {

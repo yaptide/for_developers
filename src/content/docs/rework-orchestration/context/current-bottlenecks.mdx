@@ -1,0 +1,197 @@
+---
+title: Current Bottlenecks
+description: Evidence-backed bottlenecks in transport, merge, visibility, and operational control.
+---
+
+This page documents current bottlenecks from code-level analysis and local fixture measurements.
+
+## Evidence Base
+
+Primary evidence sources:
+
+- backend orchestration and merge code in `yaptide`
+- UI polling/result-fetch behavior in `ui`
+- representative result fixture: `yaptide/tests/res/json_with_results.json`
+
+Measured fixture snapshot (`json_with_results.json`):
+
+- file size: `2,564,199` bytes
+- estimators: `4`
+- pages: `21`
+- total numeric values across pages: `98,892`
+- largest page value array length: `32,000`
+
+These numbers are not production maxima, but they are large enough to expose current scaling pressure points.
+
+## 1. JSON-Centric Result Transport and Serialization
+
+### Current behavior
+
+Direct path and batch path both convert estimator outputs into JSON structures before transport/persistence:
+
+- direct: `estimators_to_list` writes estimator JSON to disk, then reads it back into Python dicts
+- batch: collect scripts run `convertmc json --many` and sender script reads all `*.json` files and posts them as one JSON payload
+- backend `/results` receives nested JSON and re-serializes page/metadata data into compressed DB blobs
+
+### Why this is a bottleneck
+
+- multiple JSON encode/decode cycles occur in one workflow
+- direct path has extra temp-file round-trips in `estimators_to_list`
+- large nested numeric arrays are moved in-memory as Python lists and JSON strings repeatedly
+
+### Code references
+
+- `yaptide/utils/sim_utils.py` (`estimators_to_list`)
+- `yaptide/batch/fluka_string_templates.py` and `yaptide/batch/shieldhit_string_templates.py`
+- `yaptide/batch/simulation_data_sender.py`
+- `yaptide/routes/common_sim_routes.py` (`ResultsResource.post`)
+
+## 2. Broker/Backend Data Plane Pressure (Redis + Celery Results)
+
+### Current behavior
+
+- Redis is configured as both Celery broker and Celery result backend in deployment compose.
+- Direct tasks return full estimator payloads to Celery chord body (`merge_results`).
+- If `/results` POST fails during merge, merged estimators are left in Celery task result payload (`final_result`).
+- `ResultsDirect.get` can fallback to Celery `AsyncResult.info` if DB has no results yet.
+
+### Why this is a bottleneck
+
+- control messages and heavy data share the same broker/backend infrastructure
+- large result payloads can amplify Redis memory/network pressure
+- fallback behavior keeps heavy payload coupling between compute and broker state
+
+### Code references
+
+- `docker-compose.yml` (`CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`)
+- `yaptide/celery/tasks.py` (`run_single_simulation`, `merge_results`)
+- `yaptide/celery/utils/manage_tasks.py` (`get_job_results`)
+- `yaptide/routes/celery_routes.py` (`ResultsDirect.get`)
+
+## 3. Merge Pipeline in Pure Python Loops
+
+### Current behavior
+
+`average_estimators` performs page-value averaging in Python loops over list structures.
+
+Pseudo-complexity:
+
+- `O(T*P*V)`, where:
+- T is number of completed tasks,
+- P is number of pages,
+- V is values per page.
+
+With the measured fixture shape (`98,892` values) and many tasks, per-value Python loop overhead becomes significant.
+
+### Why this is a bottleneck
+
+- Python-level numeric loops are slower than vectorized kernels
+- merge task is single-task chokepoint in the chord callback
+- all merged payloads are materialized in memory as nested Python objects
+
+### Code references
+
+- `yaptide/celery/utils/pymc.py` (`average_values`, `average_estimators`)
+- `yaptide/celery/tasks.py` (`merge_results`)
+
+## 4. No True Partial Numerical Results During RUNNING
+
+### Current behavior
+
+Progress updates are streamed, numerical estimators are not.
+
+- monitors send task progress (`simulated_primaries`, `estimated_time`, states) via `/tasks`
+- merged estimator payload is sent at end of workflow via `/results`
+- UI fetches/loads result datasets when status becomes `COMPLETED`
+
+Batch mode similarly sends final results in collect stage after array completion.
+
+### Why this is a bottleneck
+
+- users can see progress bars but not intermediate dosimetry/fluence data
+- misconfiguration detection is delayed until after full run completion
+- long runs provide limited actionable feedback
+
+### Code references
+
+- `yaptide/celery/utils/pymc.py` (`read_shieldhit_file`, `read_fluka_file`)
+- `yaptide/routes/task_routes.py`
+- `ui/src/WrapperApp/components/Simulation/SimulationsGrid/SimulationsGridHelpers.ts`
+- `ui/src/services/RemoteWorkerSimulationService.ts`
+- `yaptide/batch/simulation_data_sender.py`
+
+## 5. Reliability and Operational Control Gaps
+
+### Current behavior
+
+- no explicit Celery task retry policies (`autoretry_for`, `max_retries`, etc.) in task definitions
+- HTTP update/result posts are single-attempt requests with no backoff strategy
+- known log handling issue is documented in code comments and partially disabled behavior
+- helper task process inspection uses hardcoded worker name (`celery@yaptide-simulation-worker`)
+
+### Why this is a bottleneck
+
+- transient network/backend failures can drop updates or results
+- operational behavior depends on implicit defaults rather than explicit policy
+- brittle assumptions reduce portability across deployment topologies
+
+### Code references
+
+- `yaptide/celery/tasks.py` (comments around logfile overwrite handling)
+- `yaptide/celery/utils/requests.py`
+- `yaptide/utils/helper_tasks.py`
+- `yaptide/celery/simulation_worker.py`
+
+## 6. Scaling Model Limits in Current Topology
+
+### Current behavior
+
+- default compose topology runs a single simulation worker service container
+- merge is serialized in one callback task per job
+- no object-storage-based result fan-in; final payloads are moved through backend API and DB writes
+
+### Why this is a bottleneck
+
+- single-job fan-in stage can dominate latency as task count grows
+- throughput scales less predictably for large payloads and high parallelism
+- architecture is not yet optimized for multi-node distributed result transport/merge
+
+### Code references
+
+- `docker-compose.yml`
+- `yaptide/celery/utils/manage_tasks.py`
+- `yaptide/celery/tasks.py`
+
+## Impact Summary
+
+| Bottleneck                     | Current behavior                                                  | Main impact                                  |
+| ------------------------------ | ----------------------------------------------------------------- | -------------------------------------------- |
+| JSON-heavy transport           | Multiple JSON conversions and full-payload posts                  | CPU, memory, and I/O overhead                |
+| Redis data-plane coupling      | Broker and result backend share Redis with large payload exposure | Throughput and reliability risk under load   |
+| Pure-Python merge loops        | Single-task Python list averaging                                 | Longer merge time and higher memory pressure |
+| No partial estimator streaming | Only progress updates during run                                  | Delayed scientific feedback                  |
+| Limited retry/control policy   | Mostly single-attempt update/result posting                       | Fragility on transient failures              |
+| Fan-in merge topology          | One callback merge step per job                                   | Scaling bottleneck as tasks/data grow        |
+
+## Immediate Profiling Tasks (Phase 1 input)
+
+To replace assumptions with hard numbers, run these measurements next:
+
+1. End-to-end timings per stage: run, merge, `/results` persistence.
+2. Payload size telemetry: per-task estimator JSON size, merged JSON size, response times.
+3. Merge CPU and memory profiling for realistic task counts (for example 4, 8, 16, 32).
+4. Redis memory/network telemetry under concurrent workloads.
+5. Failure-injection tests for `/tasks` and `/results` posting resilience.
+
+These measurements will feed ADR option comparisons and benchmark-based design choices in Phase 2 and Phase 3.
+
+Detailed execution plan: [Phase 1 Profiling Plan](/for_developers/rework-orchestration/research/phase-1-profiling-plan/)
+
+Recommended default tooling:
+
+- OpenTelemetry + Prometheus + Grafana for stage timing and trace correlation
+- Locust for concurrent workload generation
+- py-spy for merge CPU profiling
+- Memray for merge memory profiling
+- redis_exporter + Prometheus for Redis memory/network telemetry
+- Toxiproxy for deterministic `/tasks` and `/results` failure injection

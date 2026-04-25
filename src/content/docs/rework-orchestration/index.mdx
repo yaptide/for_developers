@@ -1,0 +1,77 @@
+---
+title: Orchestration Rework
+description: Vision, goals, and scope for redesigning simulation job orchestration.
+---
+
+## Vision
+
+This effort defines and documents a new orchestration architecture for simulation jobs that is faster, more observable, and production-ready across both HPC and cloud deployments.
+
+The design process is intentionally structured so it can be reused for future cross-repository architecture reworks.
+
+## Goals
+
+1. Researchers can inspect meaningful intermediate results before a full simulation completes.
+2. Users can run larger simulations with predictable turnaround times.
+3. Users can run multiple simulations concurrently without unstable platform behavior.
+4. Operators can understand system state quickly and diagnose failures with confidence.
+5. The platform behaves reliably under transient infrastructure failures and recovers gracefully.
+6. Architecture decisions are driven by measured workload characteristics, not assumptions.
+
+## User Stories
+
+1. As a researcher, I want to see early simulation signals so I can stop bad runs quickly.
+2. As a researcher, I want to be able to stop and gather results from simulations at any time.
+3. As a team lead, I want predictable cluster usage so I can plan shared resource allocation.
+4. As an operator, I want to detect degraded system behavior before users are blocked.
+5. As an operator, I want retry and failure semantics to be explicit so incidents are easier to resolve.
+6. As a product owner, I want clear performance baselines so architectural options can be compared fairly.
+
+## Discovery Backlog
+
+The full discovery backlog (31 open questions with status, owner, confidence, and estimate fields) lives in a dedicated page:
+
+- [Open Questions and Estimation Log](/for_developers/rework-orchestration/context/open-questions/)
+
+Priority unresolved topics for near-term discussion:
+
+1. Time-to-first-insight target for users during running jobs.
+2. Typical and p95 HPC queue wait by partition/class (for example Ares).
+3. Expected parallel tasks per simulation and parallel simulations per user.
+4. Typical dump time and result cardinality (files and pages per simulation).
+5. Required reliability semantics for final result persistence.
+6. Evidence threshold needed before selecting transport/merge architecture options.
+
+## Scope
+
+Primary repositories in scope:
+
+- [yaptide/yaptide](https://github.com/yaptide/yaptide)
+- [yaptide/for_developers](https://github.com/yaptide/for_developers)
+
+Possible secondary changes:
+
+- [yaptide/deploy](https://github.com/yaptide/deploy)
+- [yaptide/ui](https://github.com/yaptide/ui)
+
+## Process Structure
+
+This section follows a reusable pattern:
+
+- context: as-is architecture, bottlenecks, constraints, and user requirements
+- adr: decision records with explicit status changes
+- design: implementation-ready design documents
+- research: AI-assisted investigation logs for auditability
+
+## Phase 0 Deliverables
+
+- Bootstrap the documentation structure under this section.
+- Add the ADR registry and template.
+- Wire sidebar navigation for the full process structure.
+- Create cross-repository tracking artifacts for implementation planning.
+
+## Related Issues
+
+- [for_developers#45](https://github.com/yaptide/for_developers/issues/45)
+- [for_developers#48](https://github.com/yaptide/for_developers/issues/48)
+- [for_developers#8](https://github.com/yaptide/for_developers/issues/8)
