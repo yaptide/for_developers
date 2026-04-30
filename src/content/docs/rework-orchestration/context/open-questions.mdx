@@ -20,138 +20,148 @@ Response fields to fill for each question:
 ## A) User Workflow and Product Expectations
 
 1. What is an acceptable time-to-first-insight for a typical user run?
-   - Status (Open/In progress/Answered/Needs measurement): Open
-   - Notes:
+   - Status (Open/In progress/Answered/Needs measurement): Answered
+   - Notes: Around 30 seconds. Users expect to see *something* (queue state, first task started, or first partial scorer values) within roughly half a minute of submission; longer silences are perceived as "the system is broken".
 
 2. What is an acceptable total turnaround time for small, medium, and large simulations?
-   - Status (Open/In progress/Answered/Needs measurement): Open
-   - Notes:
+   - Status (Open/In progress/Answered/Needs measurement): Answered
+   - Notes: Small ~5 min, medium ~1 h, large ~8 h. These are the targets users have in mind for a healthy cluster; HPC queue waits can push the wall-clock totals beyond this and that is treated as an environmental factor, not a product defect.
 
 3. Which intermediate results are most valuable to users during RUNNING status?
-   - Status (Open/In progress/Answered/Needs measurement): Open
-   - Notes:
+   - Status (Open/In progress/Answered/Needs measurement): Answered
+   - Notes: Three things matter most: (a) per-task progress (primaries simulated vs. requested), (b) partial merged scorers (dose, fluence histograms) so the user can sanity-check geometry/physics early, and (c) an estimated time remaining. Per-task logs and queue-position telemetry are nice-to-have for power users only.
 
 4. How much partial-result staleness is acceptable (for example 10 s vs 60 s)?
-   - Status (Open/In progress/Answered/Needs measurement): Open
-   - Notes:
+   - Status (Open/In progress/Answered/Needs measurement): Answered
+   - Notes: ~5 seconds. Users are watching the UI live during early iterations; updates older than a few seconds feel laggy. This is an aspirational target — the transport must be cheap enough that 5 s cadence does not overwhelm the broker or HPC link.
 
 5. Do users prefer fewer high-confidence updates or frequent best-effort updates?
-   - Status (Open/In progress/Answered/Needs measurement): Open
-   - Notes:
+   - Status (Open/In progress/Answered/Needs measurement): Answered
+   - Notes: Frequent best-effort updates. Losing an occasional progress event is acceptable as long as the next event arrives quickly and the final state is correct.
 
 6. Which user personas need queue predictions versus detailed task-level telemetry?
-   - Status (Open/In progress/Answered/Needs measurement): Open
-   - Notes:
+   - Status (Open/In progress/Answered/Needs measurement): Answered
+   - Notes: Two personas. Casual / clinical users want a single ETA and a high-level status. Power users (developers, MC experts, people debugging input decks) want full task-level telemetry (per-task progress, logs, retries, node assignment). The UI should default to ETA-only and expose telemetry on demand.
 
 ## B) HPC Connectivity and Queue Characteristics
 
 7. What is the typical time needed to connect to target HPC clusters (for example Ares)?
-   - Status (Open/In progress/Answered/Needs measurement): Open
-   - Notes:
+   - Status (Open/In progress/Answered/Needs measurement): Answered
+   - Notes: 1–3 s when SSH is multiplexed / a control socket is reused. Cold connections with fresh auth take noticeably longer, so any orchestrator design should assume persistent or pooled SSH sessions to Ares rather than per-command connects.
 
 8. What is the p50/p95 time jobs spend in HPC waiting queues by partition/class?
-   - Status (Open/In progress/Answered/Needs measurement): Open
-   - Notes:
+   - Status (Open/In progress/Answered/Needs measurement): Answered
+   - Notes: Roughly p50 ~2 min and p95 ~10 h, but this depends *very* heavily on cluster load. On an idle cluster jobs start almost immediately; under load p95 can stretch to many hours. This variance is the dominant factor in user-perceived turnaround and must be surfaced in the UI rather than hidden.
 
 9. How often do HPC connection/setup failures occur, and what are top failure modes?
-   - Status (Open/In progress/Answered/Needs measurement): Open
-   - Notes:
+   - Status (Open/In progress/Answered/Needs measurement): Answered
+   - Notes: Rare in normal operation (\<1%). Top modes: SSH timeouts and auth/token expiry (PLGrid grant tokens, MFA refresh). Failures cluster around cluster maintenance windows and credential rollovers rather than being uniformly distributed.
 
 10. Are there cluster-side limits that strongly affect orchestration design (rate limits, job caps, walltime constraints)?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Yes, several:
+      - Per-user `MaxJobs` (running + pending) on Ares.
+      - Walltime caps per partition.
+      - `sbatch` submission rate limits — bursting hundreds of submissions back-to-back is throttled.
+      - Grant / CPU-hour quotas per PLGrid allocation.
+      - Most importantly: **cluster load drives the right task-splitting strategy**. On a quiet cluster, many small tasks start instantly and finish faster end-to-end; on a loaded cluster, many small tasks each pay the full queue-wait penalty, so fewer-but-larger tasks are better. The orchestrator should be able to choose split granularity adaptively.
 
 11. Which queue-delay patterns are predictable enough to model in UI ETA messaging?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Only off-peak hours are predictable enough for a useful ETA. During peak load, queue waits are dominated by other users' jobs and are essentially unforecastable from yaptide's vantage point. ETA UI should therefore show a confidence band and be honest about "queue conditions unknown" rather than quoting a precise time.
 
 ## C) Parallelism and Concurrency Demand
 
 12. How many parallel tasks per simulation do users typically want on HPC?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: 50–100 tasks per simulation is the typical target. This is the sweet spot between merge cost and wall-clock speedup for representative MC runs.
 
 13. What is the upper bound users realistically request for tasks per simulation?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Around 1000 tasks per simulation. Above that, MC merging cost and per-task overhead start to dominate, and cluster-side limits (Q10) bite hard.
 
 14. How many simulations in parallel does a single user expect to run?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: 5–10 simultaneous simulations per user is realistic, especially during parameter sweeps and treatment-plan studies.
 
 15. How many concurrent active users should the system support in normal and peak periods?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Normal ~5 concurrent active users, peak ~20. Combined with Q14 this implies an upper-bound design point of ~200 in-flight simulations and on the order of 10⁴–10⁵ in-flight tasks across the platform.
 
 16. What fairness model is expected when concurrent user demand exceeds capacity?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Per-user fair-share queue inside yaptide before submitting to HPC. The yaptide layer should bound how much of an individual user's workload it pushes into SLURM at once, so that one user's parameter sweep does not starve others on the shared PLGrid grant. SLURM's own fair-share is the second line of defence, not the primary one.
 
 ## D) Result Shape and Data Volume
 
 17. How long does it take to dump a single binary result artifact to disk (p50/p95)?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: p50 ~100 ms, p95 ~1 s on `$SCRATCH`. Outliers correlate with filesystem load on Ares.
 
 18. How many result files are produced per simulation for each supported simulator?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: 5–20 result files per simulation across all supported simulators (SHIELD-HIT12A, FLUKA, Geant4). This is per-task; merging multiplies the upstream volume by the number of parallel tasks (Q12–Q13).
 
 19. How many pages are typically present per result file?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: 1–10 pages per file in typical scoring setups (one page per scorer/quantity).
 
 20. What are typical and worst-case per-page array sizes?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Typical ~100k floats per page; worst case ~10M floats (e.g. fine 3D dose meshes). Worst-case pages dominate transport and merge cost and should be the design target, not the typical case.
 
 21. What are typical and worst-case merged-result payload sizes?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Typical merged payload ~10 MB; worst case ~1 GB. The 1 GB upper bound rules out naive "stuff the whole result into a single message / single DB row" designs and motivates result chunking or object-store offload.
 
 22. Which result subsets are most frequently viewed first by users?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Depth-dose curves / Bragg peaks, fluence spectra, and high-level summary statistics / totals. These are small (kilobytes to a few MB) and should be prioritised for early streaming so users get value before the full multi-MB/GB payload is merged.
 
 ## E) Reliability, Recovery, and Operations
 
 23. What data loss tolerance is acceptable for task progress updates?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Lossy is fine — progress is best-effort, last value wins. Dropping intermediate progress events has no scientific consequence as long as the *final* task state is recorded reliably.
 
 24. Is at-least-once or exactly-once semantics required for final result persistence?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: At-least-once with idempotent writes. Exactly-once is not worth its complexity cost given that result merging is naturally idempotent on (simulation_id, task_id, page_id) keys.
 
 25. What recovery time objective is acceptable after transient broker/network outages?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: ~5 minutes RTO. Within that window, in-flight simulations must resume reporting without user-visible action. Longer outages may require an operator-driven recovery and can be communicated in the UI.
 
 26. Which retries should be automatic versus operator-controlled?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Automatic: SSH/network transient errors and result-upload failures (idempotent). Operator-controlled: SLURM job failures (NODE_FAIL, OOM) and simulator crashes / non-zero exits — these usually point at a real input or environment problem and silent retry would just waste grant hours.
 
 27. What observability minimum is required for incident triage (logs, traces, metrics)?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Three minimums: (a) structured logs keyed by simulation_id and task_id, (b) Prometheus-style metrics for queue depth, stage durations, and error counts, (c) per-task stderr/stdout retained for N days so failed runs can be inspected without re-running. Distributed tracing across submit→HPC→merge is desirable but not on the minimum bar.
 
 ## F) Decision and Rollout Constraints
 
 28. Which changes must be backward-compatible with current API contracts?
     - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Notes: Skipped during interview; needs explicit decision with frontend maintainers. Candidates to pin down: REST endpoints under `/jobs` and `/results`, the project JSON schema accepted by `/jobs/direct`, the auth/cookie flow, and the WebSocket/SSE event shape consumed by the 3D editor.
 
 29. What migration windows are acceptable for infrastructure-affecting changes?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+   - Status (Open/In progress/Answered/Needs measurement): Answered
+   - Notes: Multi-day migrations are acceptable provided they are announced ahead of time. Zero-downtime is not a hard requirement for the orchestration rework — yaptide is a research platform, not a 24/7 clinical service.
 
 30. What evidence threshold is required before adopting a new transport or merge approach?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Working PoC + benchmarks on a representative simulation + ADR review. The PoC must exercise the worst-case data volumes from Q20–Q21 and the worst-case parallelism from Q13, not just toy inputs.
 
 31. Which design options are blocked without domain input from HPC operators or power users?
-    - Status (Open/In progress/Answered/Needs measurement): Open
-    - Notes:
+    - Status (Open/In progress/Answered/Needs measurement): Answered
+    - Notes: Several options need external input before they can be selected:
+      - Choice of message broker / streaming transport — constrained by Cyfronet network policy (outbound connectivity from compute nodes, allowed protocols).
+      - Use of S3-compatible object storage at Cyfronet for results — depends on availability, quotas, and credentials policy.
+      - Persistent SSH multiplexing / long-lived sessions on Ares — needs HPC ops sign-off.
+      - Acceptable parallelism caps — needs power-user input to confirm the 1000-task ceiling from Q13.
+      - Adoption of OpenTelemetry instrumentation on the HPC side — depends on what agents/exporters Cyfronet permits on compute nodes.
 
 ## Estimation Inputs Needed from Domain Experts
 

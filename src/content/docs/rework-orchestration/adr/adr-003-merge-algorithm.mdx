@@ -1,0 +1,178 @@
+---
+title: "ADR-003: NumPy Vectorization for Result Merge Pipeline"
+description: "Replace pure-Python merge loops with NumPy vectorized operations."
+status: proposed
+date: 2026-01-15
+authors: [yaptide-team]
+tags: [merge, numpy, performance, polars]
+related-issues:
+  - yaptide/yaptide#NNN
+supersedes: null
+superseded-by: null
+---
+
+# ADR-003: NumPy Vectorization for Result Merge Pipeline
+
+## Context
+
+Current merge implementation (`average_estimators()` in `yaptide/celery/utils/pymc.py`) uses pure Python loops:
+
+```python
+# O(T × P × V) complexity
+for page in pages:
+    for value_idx in range(num_values):
+        values = [task[page][value_idx] for task in tasks]
+        averaged = sum(values) / len(tasks)
+```
+
+For representative workloads (100 tasks, 10 pages, 100k values/page = 100M iterations), this becomes a significant bottleneck.
+
+## Decision Drivers
+
+| Driver | Priority | Description |
+|--------|----------|-------------|
+| Merge speed | High | Must reduce merge time by 10-100× |
+| Memory efficiency | High | Must not materialize all data in memory |
+| Code simplicity | Medium | Should not add significant complexity |
+| Future extensibility | Medium | Should support advanced aggregations (quantiles, std) |
+
+## Considered Options
+
+### Option A: Pure Python (Current)
+
+**Description:** Continue with existing Python loop implementation.
+
+**Pros:**
+- ✅ No new dependencies
+- ✅ Simple to understand
+
+**Cons:**
+- ❌ Extremely slow (100M+ Python iterations)
+- ❌ High memory (Python list objects)
+- ❌ No vectorization benefits
+
+**Effort:** None (status quo)
+
+### Option B: NumPy Vectorization (Recommended)
+
+**Description:** Use NumPy arrays and vectorized operations for merge.
+
+```python
+import numpy as np
+
+stacked = np.vstack([task[page].to_numpy() for task in tasks])
+merged = np.mean(stacked, axis=0)
+```
+
+**Pros:**
+- ✅ 10-100× faster (C-level loops)
+- ✅ Memory efficient (contiguous buffers)
+- ✅ Simple API (few lines of code)
+- ✅ Native Arrow integration (`pa.Array.to_numpy()`)
+
+**Cons:**
+- ⚠️ Requires all data in memory for `vstack()`
+- ⚠️ Limited to simple aggregations (mean, sum, std)
+
+**Effort:** Low (2-3 weeks)
+
+### Option C: Polars
+
+**Description:** Use Polars DataFrame for merge with lazy evaluation.
+
+```python
+import polars as pl
+
+merged = (
+    pl.concat(dfs)
+    .groupby("page_id")
+    .agg(pl.col("value").mean())
+    .collect(streaming=True)
+)
+```
+
+**Pros:**
+- ✅ Out-of-core execution (streaming mode)
+- ✅ Advanced aggregations (quantiles, groupby)
+- ✅ Query optimization (lazy API)
+
+**Cons:**
+- ⚠️ Higher learning curve (expressions API)
+- ⚠️ Overkill for simple averaging
+- ⚠️ Additional dependency (Rust runtime)
+
+**Effort:** Medium (4-5 weeks)
+
+### Option D: Dask Distributed
+
+**Description:** Use Dask for distributed merge across workers.
+
+**Pros:**
+- ✅ True distributed merge (multi-node)
+- ✅ Out-of-core execution
+- ✅ Phase 3 ready (horizontal scaling)
+
+**Cons:**
+- ❌ High complexity (cluster management)
+- ❌ Overkill for Phase 2 (single worker)
+- ❌ Significant operational overhead
+
+**Effort:** High (8-10 weeks)
+
+## Decision Outcome
+
+**Chosen option:** "Option B: NumPy Vectorization"
+
+**Justification:**
+
+NumPy provides the best balance of **performance** (Driver 1) and **simplicity** (Driver 3) for Phase 2. It integrates natively with Arrow (ADR-002) and achieves the target 10-100× speedup without the complexity of Polars or Dask. Polars can be added later (Phase 3) if advanced aggregations are needed.
+
+**Confirmation:** Benchmark will validate:
+- Merge time for 100 tasks, 10 pages, 100k values/page
+- Memory peak during merge
+- Comparison: Python vs NumPy vs Polars
+
+## Consequences
+
+### Positive
+
+- Merge time reduced from ~100s to ~1-5s (representative workload)
+- Memory footprint reduced (no Python list objects)
+- Simple code change (~10 lines)
+- Enables future Polars/Dask upgrade (same data format)
+
+### Negative
+
+- Still requires all data in memory (limitation for >1 GB merges)
+- No advanced aggregations initially (quantiles, percentiles)
+
+### Neutral
+
+- Dependency on NumPy (already common in scientific Python)
+- Merge function signature unchanged (API compatible)
+
+## Implementation Plan
+
+| Task | Owner | Timeline |
+|------|-------|----------|
+| NumPy merge implementation | @backend | Week 1-2 |
+| Arrow → NumPy conversion | @backend | Week 2 |
+| Benchmark suite (Python vs NumPy) | @backend | Week 3 |
+| Polars evaluation (Phase 3 prep) | @backend | Week 10+ |
+
+## Validation Criteria
+
+- [ ] Merge time \<5s for representative workload
+- [ ] Memory peak \<2× raw data size
+- [ ] No regression in result accuracy (float precision)
+- [ ] Code coverage >90% for merge functions
+
+## References
+
+- [Research Session 004: Merge Algorithm Benchmark](/rework-orchestration/research/session-004-merge-benchmark)
+- [Design: Result Merge Pipeline](/rework-orchestration/design/result-merge-pipeline)
+- [NumPy Documentation](https://numpy.org/doc)
+
+---
+
+**Last updated:** 2026-04-30
