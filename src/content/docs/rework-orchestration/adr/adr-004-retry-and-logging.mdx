@@ -1,0 +1,143 @@
+---
+title: "ADR-004: Celery Retry Policies with Exponential Backoff"
+description: "Add production-grade retry logic and structured logging."
+status: proposed
+date: 2026-01-15
+authors: [yaptide-team]
+tags: [reliability, retry, logging, observability]
+related-issues:
+  - yaptide/yaptide#NNN
+supersedes: null
+superseded-by: null
+---
+
+# ADR-004: Celery Retry Policies with Exponential Backoff
+
+## Context
+
+Current implementation has no explicit retry policies:
+- HTTP POSTs to `/tasks` and `/results` are single-attempt
+- Celery tasks use default retry behavior (none)
+- Logging is basic Python `logging` (no structure)
+
+This causes fragility on transient failures (network blips, HPC timeouts).
+
+## Decision Drivers
+
+| Driver | Priority | Description |
+|--------|----------|-------------|
+| Reliability | High | Must recover from transient failures automatically |
+| Observability | High | Must enable fast incident triage |
+| Operational simplicity | Medium | Should not add significant complexity |
+| RTO target | High | Must achieve \<5 minute recovery time |
+
+## Considered Options
+
+### Option A: No Retry (Current)
+
+**Description:** Continue with single-attempt HTTP posts.
+
+**Pros:**
+- ✅ Simple implementation
+- ✅ No duplicate updates
+
+**Cons:**
+- ❌ Data loss on transient failures
+- ❌ Manual intervention required
+- ❌ No audit trail
+
+**Effort:** None (status quo)
+
+### Option B: Celery Built-in Retry (Recommended)
+
+**Description:** Use Celery's `autoretry_for` with exponential backoff.
+
+```python
+@task(
+    autoretry_for=(ConnectionError, TimeoutError),
+    retry_backoff=True,
+    retry_backoff_max=600,
+    retry_jitter=True
+)
+def run_single_simulation(...):
+    ...
+```
+
+**Pros:**
+- ✅ Minimal code change (decorator)
+- ✅ Exponential backoff (avoids thundering herd)
+- ✅ Built-in dead-letter queue (max_retries exceeded)
+- ✅ Idempotent by design (task_id tracking)
+
+**Cons:**
+- ⚠️ May delay failure notification (retry delays)
+- ⚠️ Requires idempotent handlers (already true for /tasks)
+
+**Effort:** Low (1-2 weeks)
+
+### Option C: Custom Retry Layer
+
+**Description:** Implement custom retry logic with `tenacity` or similar.
+
+**Pros:**
+- ✅ Full control over retry behavior
+- ✅ Can add custom logic (circuit breaker, etc.)
+
+**Cons:**
+- ❌ More code to maintain
+- ❌ Duplicates Celery functionality
+- ❌ Additional dependency
+
+**Effort:** Medium (3-4 weeks)
+
+## Decision Outcome
+
+**Chosen option:** "Option B: Celery Built-in Retry"
+
+**Justification:**
+
+Celery's built-in retry provides **adequate reliability** (Driver 1) with **minimal complexity** (Driver 3). The decorator approach is well-tested and integrates with existing task infrastructure.
+
+## Consequences
+
+### Positive
+
+- Automatic recovery from transient failures
+- Reduced manual intervention
+- Dead-letter queue for failed tasks (investigation)
+- Better observability (retry counts in logs)
+
+### Negative
+
+- Slightly delayed failure notification (retry delays)
+- Must ensure all handlers are idempotent
+
+### Neutral
+
+- Celery configuration changes (broker transport options)
+- Log volume increases (retry events)
+
+## Implementation Plan
+
+| Task | Owner | Timeline |
+|------|-------|----------|
+| Celery retry decorator | @backend | Week 1 |
+| Idempotency audit (/tasks, /results) | @backend | Week 1-2 |
+| Structured logging (structlog) | @backend | Week 2-3 |
+| Grafana retry metrics dashboard | @devops | Week 3-4 |
+
+## Validation Criteria
+
+- [ ] Transient failures auto-recover without data loss
+- [ ] Failed tasks visible in dead-letter queue
+- [ ] RTO \<5 minutes for broker/network outages
+- [ ] Structured logs queryable by `simulation_id` and `task_id`
+
+## References
+
+- [Celery Retry Documentation](https://docs.celeryq.dev/en/stable/userguide/tasks.html#automatic-retry-for-known-exceptions)
+- [Design: Partial Results Streaming](/rework-orchestration/design/partial-results-streaming)
+
+---
+
+**Last updated:** 2026-04-30

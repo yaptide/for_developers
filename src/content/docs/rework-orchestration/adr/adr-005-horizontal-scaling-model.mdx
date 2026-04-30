@@ -1,0 +1,121 @@
+---
+title: "ADR-005: Single-Worker First, Distributed Scaling in Phase 3"
+description: "Defer horizontal scaling to Phase 3; focus on partial results first."
+status: proposed
+date: 2026-01-15
+authors: [yaptide-team]
+tags: [scalability, distributed, phasing]
+related-issues:
+  - yaptide/yaptide#NNN
+supersedes: null
+superseded-by: null
+---
+
+# ADR-005: Single-Worker First, Distributed Scaling in Phase 3
+
+## Context
+
+The orchestration rework has two major goals that could be implemented simultaneously:
+1. Partial results streaming (Phase 2)
+2. Horizontal scaling across multiple workers (Phase 3)
+
+This ADR addresses the sequencing question: should we implement both at once, or phase them?
+
+## Decision Drivers
+
+| Driver | Priority | Description |
+|--------|----------|-------------|
+| Time-to-value | High | Users need partial results ASAP |
+| Complexity | High | Distributed systems add significant complexity |
+| Debugging | Medium | Single-worker easier to debug |
+| Validation | High | Need clear metrics per change |
+
+## Considered Options
+
+### Option A: Both at Once
+
+**Description:** Implement partial results and distributed scaling simultaneously.
+
+**Pros:**
+- ✅ Single migration event
+- ✅ Full capability from day 1
+
+**Cons:**
+- ❌ High complexity (coordination + streaming)
+- ❌ Hard to isolate issues
+- ❌ 6+ months to first user value
+- ❌ High rework risk
+
+**Effort:** High (8-10 months)
+
+### Option B: Single-Worker First (Recommended)
+
+**Description:** Implement partial results with single worker (Phase 2), add distribution later (Phase 3).
+
+**Pros:**
+- ✅ Fast time-to-value (3-4 months)
+- ✅ Clear isolation of changes
+- ✅ Easier debugging and validation
+- ✅ Option to skip Phase 3 if single worker suffices
+
+**Cons:**
+- ⚠️ Second migration event (Phase 3)
+- ⚠️ Some rework for distributed merge
+
+**Effort:** Medium (Phase 2: 4 months, Phase 3: 3 months)
+
+## Decision Outcome
+
+**Chosen option:** "Option B: Single-Worker First"
+
+**Justification:**
+
+The main user pain point is **no partial results**, not worker count. Phasing delivers value faster and reduces risk. Phase 3 can be skipped entirely if metrics show single worker handles load.
+
+**Gate Criteria for Phase 3:**
+- Single worker CPU >80% at peak load
+- Queue depth growing unbounded
+- User requests for >1000 tasks/simulation
+
+## Consequences
+
+### Positive
+
+- Users get partial results in 4 months, not 8-10
+- Clear validation (partial results work → add scaling)
+- Option to skip Phase 3 if not needed
+- Reduced rework risk (learn from Phase 2)
+
+### Negative
+
+- Two migration events instead of one
+- Some code rework for distributed merge (Phase 3)
+
+### Neutral
+
+- Phase 3 design influenced by Phase 2 learnings
+- Worker interface designed for future distribution (ADR-002)
+
+## Implementation Plan
+
+| Phase | Timeline | Focus |
+|-------|----------|-------|
+| Phase 2 | Weeks 1-16 | Single worker + partial results + Arrow |
+| Gate Review | Week 17 | Metrics review: proceed to Phase 3? |
+| Phase 3 | Weeks 18-30 (optional) | Distributed workers + Dask merge |
+
+## Validation Criteria
+
+- [ ] Single worker handles 200 concurrent simulations
+- [ ] Merge \<5% of total job time
+- [ ] No user complaints about scale after Phase 2
+- [ ] Phase 3 decision documented with metrics
+
+## References
+
+- [Variant D Roadmap](/rework-orchestration/design/variant-d-roadmap)
+- [Current Bottlenecks](/rework-orchestration/context/current-bottlenecks)
+
+---
+
+**Last updated:** 2026-04-30
