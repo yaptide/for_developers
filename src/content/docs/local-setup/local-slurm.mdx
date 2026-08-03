@@ -3,22 +3,319 @@ title: Local Setup — SLURM
 description: Run the YAPTIDE backend locally with Keycloak authentication for SLURM integration development.
 ---
 
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+
 This guide covers a full local setup with Keycloak authentication — required for SLURM job submission.
 It builds on the [Celery worker setup](/for_developers/local-setup/local-celery/) and adds Keycloak for both the backend and frontend.
 
 ## When to use this setup
 
-| Scenario                                   | Recommended setup                                                          |
-| ------------------------------------------ | -------------------------------------------------------------------------- |
-| Frontend / Geant4 in-browser only          | [Local Frontend Demo](/for_developers/local-setup/local-frontend-demo/)              |
-| Full stack with SHIELD-HIT12A or FLUKA     | [Local Celery](/for_developers/local-setup/local-celery/)                            |
-| Full stack with SLURM cluster              | **This page**                                                              |
+| Scenario                               | Recommended setup                                                       |
+| -------------------------------------- | ----------------------------------------------------------------------- |
+| Frontend / Geant4 in-browser only      | [Local Frontend Demo](/for_developers/local-setup/local-frontend-demo/) |
+| Full stack with SHIELD-HIT12A or FLUKA | [Local Celery](/for_developers/local-setup/local-celery/)               |
+| Full stack with SLURM cluster          | **This page**                                                           |
 
 :::tip
 If you don't need hot-reload, the [Docker Setup](/for_developers/docker-setup/docker-slurm/)
 is simpler — no dependency management and easier teardown.
 :::
 
-:::caution[Work in Progress]
-  This page is not yet complete — we are still working on the SLURM integration and will update this guide once it's ready. In the meantime, see the [Local — Celery](/for_developers/local-setup/local-celery/) guide for the Celery setup.
+## What you'll run
+
+You need **three terminals** for the backend, plus one for the frontend:
+
+| Terminal | What runs                |
+| -------- | ------------------------ |
+| 1        | Celery simulation worker |
+| 2        | Celery helper worker     |
+| 3        | Flask API                |
+| 4        | Frontend dev server      |
+
+## Prerequisites
+
+- **Python 3.9+** with [Poetry](https://python-poetry.org/docs/) installed
+- **Node.js 20+** with npm
+- **Docker**
+- **Git**
+
+## Backend setup
+
+### 1. Clone and install dependencies
+
+Clone the repository:
+
+```bash
+git clone https://github.com/yaptide/yaptide.git
+```
+
+Navigate to the `yaptide/` directory:
+
+```bash
+cd yaptide
+```
+
+Install Python dependencies with Poetry. This will create a virtual environment in `.venv/` and install all required packages for the backend:
+
+```bash
+poetry install
+```
+
+### 2. Download simulator binaries
+
+YAPTIDE stores licensed simulator binaries on S3-compatible object storage. The `download-shieldhit` command has two modes depending on whether S3 credentials are provided:
+
+- **Without S3 credentials** (default demo mode): downloads the freely available SHIELD-HIT12A demo binary directly from the project website. No configuration needed.
+- **With S3 credentials + `--decrypt` flag**: downloads the full licensed binary from your S3 bucket and decrypts it using the configured encryption key.
+
+<Tabs syncKey="os">
+  <TabItem label="Linux">
+    ```bash
+    poetry run yaptide/admin/simulators.py download-shieldhit --dir bin
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    poetry run yaptide\admin\simulators.py download-shieldhit --dir bin
+    ```
+  </TabItem>
+</Tabs>
+
+To use S3 (for the full licensed version), create a `.env` file in the project root with the following variables:
+
+```bash title=".env"
+S3_ENDPOINT=https://your-s3-endpoint.com
+S3_ACCESS_KEY=your-access-key
+S3_SECRET_KEY=your-secret-key
+S3_ENCRYPTION_PASSWORD=your-encryption-password
+S3_ENCRYPTION_SALT=your-encryption-salt
+S3_SHIELDHIT_BUCKET=your-bucket-name
+S3_SHIELDHIT_KEY=shieldhit-filename.tar.gz
+```
+
+Then run the download with S3 and decryption enabled:
+
+<Tabs syncKey="os">
+  <TabItem label="Linux">
+    ```bash
+    poetry run yaptide/admin/simulators.py download-shieldhit --dir bin --decrypt
+    ```
+  </TabItem>
+  <TabItem label="Windows (PowerShell)">
+    ```powershell
+    poetry run yaptide\admin\simulators.py download-shieldhit --dir bin --decrypt
+    ```
+  </TabItem>
+</Tabs>
+
+:::note
+The free demo binary is sufficient for development and testing. The full licensed version of SHIELD-HIT12A (and FLUKA) requires S3 access and an encryption key — contact your institution or the SHIELD-HIT12A team for access.
 :::
+
+### 3. Start Redis
+
+Redis is the message broker between Flask and the Celery workers.
+The simplest approach is a Docker container:
+
+```bash
+docker run --detach --publish 6379:6379 --name yaptide_redis_local redis:7-alpine
+```
+
+### 4. Setup .env
+
+Add these variables to the `.env` file in the project root:
+
+```bash title=".env"
+KEYCLOAK_BASE_URL='http://127.0.0.1:8080'
+KEYCLOAK_REALM='yaptide'
+KEYCLOAK_CLIENT_ID='yaptide-app'
+CERT_AUTH_URL="http://127.0.0.1:5001"
+
+# enable slurm docker container to reach the backend
+FLASK_RUN_HOST=0.0.0.0
+BACKEND_EXTERNAL_URL=http://host.docker.internal:5000
+
+COMPOSE_PROJECT_NAME=slurm
+SLURM_VERSION=25.11.4
+LMOD_VERSION=9.1.2
+SPACK_VERSION=v1.1.1
+MYSQL_USER=slurm
+MYSQL_PASSWORD=password
+MYSQL_DATABASE=slurm_acct_db
+# SSH is required for yaptide-slurm communication
+SSH_ENABLE=true
+SSH_AUTHORIZED_KEYS=$HOME/.ssh/authorized_keys
+SSH_PORT=3022
+```
+
+### 5. Start the Celery simulation worker
+
+This worker picks up simulation jobs from the queue and runs the simulator. It needs access to the simulator binaries (the `bin` directory from step 2).
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+PATH=$PATH:bin BACKEND_INTERNAL_URL=http://127.0.0.1:5000 CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run celery --app yaptide.celery.simulation_worker worker --events -P eventlet --hostname yaptide-simulation-worker --queues simulations --loglevel=warning
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+$Env:PATH += ";" + (Join-Path -Path (Get-Location) -ChildPath "bin"); $env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run celery --app yaptide.celery.simulation_worker worker --events -P eventlet --hostname yaptide-simulation-worker --queues simulations --loglevel=warning
+```
+
+</TabItem>
+</Tabs>
+
+**Why these variables?**
+
+- `PATH` — so the worker can find the SHIELD-HIT12A binary in `bin/`
+- `BACKEND_INTERNAL_URL` — the worker reports progress back to Flask at this address
+- `CELERY_BROKER_URL` / `CELERY_RESULT_BACKEND` — connect to Redis for task dispatch and result storage
+
+### 6. Start the Celery helper worker
+
+The helper worker handles post-processing tasks (collecting results, cleanup). Open a second backend terminal and go to the `yaptide/` directory. Run:
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///instance/db.sqlite BACKEND_INTERNAL_URL=http://127.0.0.1:5000 CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run celery --app yaptide.utils.helper_worker worker --events --hostname yaptide-helper-worker --queues helper --loglevel=warning
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///instance/db.sqlite"; $env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run celery --app yaptide.utils.helper_worker worker --events --hostname yaptide-helper-worker --queues helper --loglevel=warning
+```
+
+</TabItem>
+</Tabs>
+
+### 7. Start the Flask API
+
+Open a third backend terminal and go to the `yaptide/` directory. Run:
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+FLASK_USE_CORS=True FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite" CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run flask  --app yaptide.application run --host 0.0.0.0
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+$env:FLASK_USE_CORS="True"; $env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run flask --app yaptide.application run --host 0.0.0.0
+```
+
+</TabItem>
+</Tabs>
+
+**Why `FLASK_USE_CORS=True`?** During development, the frontend runs on `localhost:3000` and the backend on `localhost:5000`. Without CORS enabled, the browser blocks cross-origin requests.
+
+This creates `db.sqlite` inside `./instance/` (default [Flask instance folder](https://flask.palletsprojects.com/en/3.0.x/config/#instance-folders)).
+
+`--debug` flag enables Flask debug messages and auto-reload on code changes.
+
+### 8. Start Slurm, Keycloak and CA containers
+
+Local slurm setup emulates PLGrid SLURM cluster. It requires multiple services to run, including a slurm database, a Keycloak instance, and a certificate authority.
+All of these can be started with a single command:
+
+```bash
+docker compose -f docker-compose.slurm.yml up --detach
+```
+
+After the containers are up, run the setup script to create dev user in the Slurm cluster, add the cluster to yaptide database and copy the shieldhit binary into the cluster:
+
+```bash
+./scripts/setup_local_slurm.sh
+``` 
+
+## Frontend setup
+
+Exit the `yaptide/` directory in the 4th terminal:
+
+```bash
+cd ..
+```
+
+Clone the frontend repo:
+
+```bash
+git clone https://github.com/yaptide/ui.git
+```
+
+Navigate to the `ui` directory:
+
+```bash
+cd ui
+```
+
+Pull the [converter](https://github.com/yaptide/converter) submodule. 
+The converter is a standalone Python package that translates the editor's JSON project format 
+into native input files for simulation engines:
+
+```bash
+git submodule update --init --recursive
+```
+
+Install frontend dependencies:
+
+```bash
+npm install
+```
+
+Create a `.env` file in the `ui/` directory:
+
+```bash title="ui/.env"
+REACT_APP_ALT_AUTH='plg'
+REACT_APP_KEYCLOAK_BASE_URL='http://127.0.0.1:8080'
+REACT_APP_KEYCLOAK_REALM='yaptide'
+REACT_APP_KEYCLOAK_CLIENT_ID='yaptide-app'
+REACT_APP_BACKEND_URL='http://127.0.0.1:5000'
+```
+
+## Start the frontend
+
+```bash
+npm run start
+```
+
+Open **http://127.0.0.1:3000**. Click "Connect with PLGrid" and log in with username: `devuser`, password: `password`. The setup is complete now. The page reloads on edits.
+
+:::caution
+Make sure to access frontend using **http://127.0.0.1:3000**. **http://localhost:3000** will not work due to Keycloak security policies.
+:::
+
+## Code formatting
+
+The backend uses **Ruff** (`ruff check` + `ruff format`) via pre-commit hooks:
+
+```bash
+poetry run pre-commit install
+```
+
+After installing, hooks run automatically on every `git commit`. If a hook fails:
+
+1. The commit is aborted
+2. Some hooks auto-fix files (for example, the `ruff check --fix` and `ruff format` hooks) — just commit again
+3. Other issues are reported in the terminal for manual fixing
+
+To run all hooks manually:
+
+```bash
+pre-commit run --all-files
+```
+
+Frontend uses `prettier` for formatting, run it with:
+
+```bash
+npm run format
+```
