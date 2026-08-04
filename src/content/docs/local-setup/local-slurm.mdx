@@ -217,7 +217,7 @@ $env:FLASK_USE_CORS="True"; $env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sql
 
 This creates `db.sqlite` inside `./instance/` (default [Flask instance folder](https://flask.palletsprojects.com/en/3.0.x/config/#instance-folders)).
 
-`--debug` flag enables Flask debug messages and auto-reload on code changes.
+`--host 0.0.0.0` flag allows the SLURM container to reach the backend at `http://host.docker.internal:5000` (the host machine).
 
 ### 8. Start Slurm, Keycloak and CA containers
 
@@ -241,7 +241,7 @@ docker exec -it slurmctld /bin/bash
 ```
 
 The docker compose and setup script do the following things:
-- Set up auth as described (here)[/for_developers/architecture/auth-model/#local-slurm-verification] 
+- Set up auth as described [here](/for_developers/architecture/auth-model/#local-slurm-verification) 
 - Mount shared `/tmp/scratch` on all nodes
 - Add **$SCRATCH** variable `/tmp/scratch/{USER}`
 - Create devuser in the Slurm cluster
