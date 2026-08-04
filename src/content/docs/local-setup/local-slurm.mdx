@@ -16,10 +16,6 @@ It builds on the [Celery worker setup](/for_developers/local-setup/local-celery/
 | Full stack with SHIELD-HIT12A or FLUKA | [Local Celery](/for_developers/local-setup/local-celery/)               |
 | Full stack with SLURM cluster          | **This page**                                                           |
 
-:::tip
-If you don't need hot-reload, the [Docker Setup](/for_developers/docker-setup/docker-slurm/)
-is simpler — no dependency management and easier teardown.
-:::
 
 ## What you'll run
 
@@ -225,18 +221,38 @@ This creates `db.sqlite` inside `./instance/` (default [Flask instance folder](h
 
 ### 8. Start Slurm, Keycloak and CA containers
 
-Local slurm setup emulates PLGrid SLURM cluster. It requires multiple services to run, including a slurm database, a Keycloak instance, and a certificate authority.
+Local slurm setup emulates PLGrid SLURM cluster settings and authentication. It requires multiple services to run, including a slurm database, a Keycloak instance, and a certificate authority.
 All of these can be started with a single command:
 
 ```bash
 docker compose -f docker-compose.slurm.yml up --detach
 ```
 
-After the containers are up, run the setup script to create dev user in the Slurm cluster, add the cluster to yaptide database and copy the shieldhit binary into the cluster:
+After the containers are up, run the setup script:
 
 ```bash
 ./scripts/setup_local_slurm.sh
 ``` 
+
+If you want to connect to the slurm shell, run (this is not required for the setup):
+
+```bash
+docker exec -it slurmctld /bin/bash
+```
+
+The docker compose and setup script do the following things:
+- Set up auth as described (here)[/for_developers/architecture/auth-model/#local-slurm-verification] 
+- Mount shared `/tmp/scratch` on all nodes
+- Add **$SCRATCH** variable `/tmp/scratch/{USER}`
+- Create devuser in the Slurm cluster
+- Add the cluster to yaptide database
+- Copy the Shieldhit binary into the cluster
+- Create a **LMOD** module for Shieldhit
+- Install **pymchelper** library on all nodes (required for merging results)
+
+:::caution
+The slurm container must be able to reach the backend API at `http://host.docker.internal:5000` (the host machine), which might require additional configuration on some operating systems. 
+:::
 
 ## Frontend setup
 

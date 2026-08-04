@@ -125,6 +125,10 @@ The backend also:
 2. Stores the certificate and private key in `KeycloakUserModel`
 3. Uses these credentials for SSH connections to HPC clusters when submitting batch jobs
 
+### Local SLURM Verification
+
+[Local SLURM setup](/for_developers/local-setup/local-slurm/) emulates the PLGrid auth infrastructure locally. It creates a Keycloak instance and a mock certificate authority server. Keycloak config can be viewed [here](https://github.com/yaptide/yaptide/blob/68bbbf86a37b120a2708fe515e8256f1e23f28a7/slurm/keycloak/yaptide-realm.json). The mock certificate authority uses the private key `/slurm/ca_key/ca_key` to sign the certs. Entrypoint script puts the public key `/slurm/ca_key/ca_key.pub` into the Slurm cluster and configures it to trust any certificates signed by that authority.
+
 ## Demo Mode
 
 When `REACT_APP_TARGET=demo`, authentication is bypassed entirely and only in-browser Geant4 simulations are available. See [Frontend Demo — Local](/for_developers/local-setup/local-frontend-demo/) for setup instructions.
