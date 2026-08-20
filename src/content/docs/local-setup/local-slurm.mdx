@@ -131,17 +131,9 @@ CERT_AUTH_URL="http://127.0.0.1:5001"
 FLASK_RUN_HOST=0.0.0.0
 BACKEND_EXTERNAL_URL=http://host.docker.internal:5000
 
-COMPOSE_PROJECT_NAME=slurm
-SLURM_VERSION=25.11.4
-LMOD_VERSION=9.1.2
-SPACK_VERSION=v1.1.1
-MYSQL_USER=slurm
-MYSQL_PASSWORD=password
-MYSQL_DATABASE=slurm_acct_db
-# SSH is required for yaptide-slurm communication
-SSH_ENABLE=true
-SSH_AUTHORIZED_KEYS=$HOME/.ssh/authorized_keys
-SSH_PORT=3022
+# number of workers to run in the slurm container
+# running simulations with JOBS > WORKERS works, but will be slower
+SLURM_CPU_WORKER_COUNT=2
 ```
 
 ### 5. Start the Celery simulation worker
@@ -152,14 +144,14 @@ This worker picks up simulation jobs from the queue and runs the simulator. It n
 <TabItem label="Linux">
 
 ```bash
-PATH=$PATH:bin BACKEND_INTERNAL_URL=http://127.0.0.1:5000 CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run celery --app yaptide.celery.simulation_worker worker --events -P eventlet --hostname yaptide-simulation-worker --queues simulations --loglevel=warning
+PATH=$PATH:bin BACKEND_INTERNAL_URL=http://127.0.0.1:5000 BACKEND_EXTERNAL_URL=http://host.docker.internal:5000 CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run celery --app yaptide.celery.simulation_worker worker --events -P eventlet --hostname yaptide-simulation-worker --queues simulations --loglevel=warning
 ```
 
 </TabItem>
 <TabItem label="Windows (PowerShell)">
 
 ```powershell
-$Env:PATH += ";" + (Join-Path -Path (Get-Location) -ChildPath "bin"); $env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run celery --app yaptide.celery.simulation_worker worker --events -P eventlet --hostname yaptide-simulation-worker --queues simulations --loglevel=warning
+$Env:PATH += ";" + (Join-Path -Path (Get-Location) -ChildPath "bin"); $env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"; $env:BACKEND_EXTERNAL_URL="http://host.docker.internal:5000"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run celery --app yaptide.celery.simulation_worker worker --events -P eventlet --hostname yaptide-simulation-worker --queues simulations --loglevel=warning
 ```
 
 </TabItem>
@@ -179,14 +171,14 @@ The helper worker handles post-processing tasks (collecting results, cleanup). O
 <TabItem label="Linux">
 
 ```bash
-FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///instance/db.sqlite BACKEND_INTERNAL_URL=http://127.0.0.1:5000 CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run celery --app yaptide.utils.helper_worker worker --events --hostname yaptide-helper-worker --queues helper --loglevel=warning
+FLASK_SQLALCHEMY_DATABASE_URI=sqlite:///instance/db.sqlite BACKEND_INTERNAL_URL=http://127.0.0.1:5000 BACKEND_EXTERNAL_URL=http://host.docker.internal:5000 CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run celery --app yaptide.utils.helper_worker worker --events --hostname yaptide-helper-worker --queues helper --loglevel=warning
 ```
 
 </TabItem>
 <TabItem label="Windows (PowerShell)">
 
 ```powershell
-$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///instance/db.sqlite"; $env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run celery --app yaptide.utils.helper_worker worker --events --hostname yaptide-helper-worker --queues helper --loglevel=warning
+$env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///instance/db.sqlite"; $env:BACKEND_INTERNAL_URL="http://127.0.0.1:5000"; $env:BACKEND_EXTERNAL_URL="http://host.docker.internal:5000"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run celery --app yaptide.utils.helper_worker worker --events --hostname yaptide-helper-worker --queues helper --loglevel=warning
 ```
 
 </TabItem>
