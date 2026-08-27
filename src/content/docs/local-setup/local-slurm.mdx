@@ -130,6 +130,7 @@ CERT_AUTH_URL="http://127.0.0.1:5001"
 # enable slurm docker container to reach the backend
 FLASK_RUN_HOST=0.0.0.0
 BACKEND_EXTERNAL_URL=http://host.docker.internal:5000
+CA_ALLOW_INSECURE_TOKENS=true
 
 # number of workers to run in the slurm container
 # running simulations with JOBS > WORKERS works, but will be slower
