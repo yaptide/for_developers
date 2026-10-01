@@ -4,7 +4,7 @@ description: Authentication and session management API.
 ---
 
 :::note
-Native username/password auth can be disabled per instance with the `ENABLE_USER_REGISTRATION` and `ENABLE_LOCAL_USERS` environment variables. See [Keycloak-only deployments](/for_developers/architecture/auth-model/#keycloak-only-deployments).
+Native username/password auth is available only when the backend runs with `ENABLE_LOCAL_USERS=true`. Otherwise register, login and refresh return `403`. See [Keycloak-only deployments](/for_developers/architecture/auth-model/#keycloak-only-deployments).
 :::
 
 ## Register
@@ -32,7 +32,7 @@ Content-Type: application/json
 
 **Errors:**
 - `400` — Missing username or password
-- `403` — User already exists, or registration is disabled on this instance (`ENABLE_USER_REGISTRATION` or `ENABLE_LOCAL_USERS` set to `false`)
+- `403` — User already exists, or local users are disabled on this instance (`ENABLE_LOCAL_USERS` not `true`)
 
 ---
 
@@ -67,7 +67,7 @@ Content-Type: application/json
 **Errors:**
 - `401` — Invalid credentials
 - `400` — Missing fields
-- `403` — Local users are disabled on this instance (`ENABLE_LOCAL_USERS=false`)
+- `403` — Local users are disabled on this instance (`ENABLE_LOCAL_USERS` not `true`)
 
 ---
 
@@ -94,7 +94,7 @@ Cookie: refresh_token=<jwt>
 
 **Errors:**
 - `401` — Invalid or expired refresh token
-- `403` — Local users are disabled on this instance (`ENABLE_LOCAL_USERS=false`)
+- `403` — Local users are disabled on this instance (`ENABLE_LOCAL_USERS` not `true`)
 
 ---
 
@@ -119,7 +119,7 @@ Cookie: access_token=<jwt>
 
 The `source` field indicates the authentication provider: `"local"` or `"keycloak"`.
 
-When `ENABLE_LOCAL_USERS=false`, this and every other protected endpoint return `403` for local users, even with a token issued before the switch.
+When local users are disabled, this and every other protected endpoint return `403` for local users, even with a token issued before the switch.
 
 ---
 

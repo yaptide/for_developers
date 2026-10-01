@@ -9,7 +9,7 @@ YAPTIDE supports two authentication methods: **native Yaptide auth** (username/p
 
 | Method | When Used | Users |
 |---|---|---|
-| **Yaptide Native** | Development, standalone deployments | Any registered user |
+| **Yaptide Native** | Development, standalone deployments (requires `ENABLE_LOCAL_USERS=true`) | Any registered user |
 | **Keycloak SSO** | Production, PLGrid-integrated deployments | PLGrid-federated users |
 
 ## Native Authentication Flow
@@ -131,16 +131,16 @@ The backend also:
 
 ## Keycloak-Only Deployments
 
-Instances that authenticate exclusively through Keycloak (e.g. `yaptide.c3.plgrid.pl`) can switch native auth off with backend environment variables. Values `false`, `0`, `no`, `off` and empty disable a flag; when unset, both flags are enabled.
+Native auth is controlled by a single backend environment variable, `ENABLE_LOCAL_USERS`. Local users are **disabled by default**: unless the variable is set to a truthy value (`true`, `1`, `yes`, `on`), the instance accepts Keycloak users only. The value is parsed with [environs](https://github.com/sloria/environs); an invalid value is logged and treated as disabled.
 
-| Variable | Default | Effect when set to `false` |
-|---|---|---|
-| `ENABLE_USER_REGISTRATION` | `true` (`false` in `docker-compose.yml`) | `PUT /auth/register` returns `403`. Existing local users can still log in. |
-| `ENABLE_LOCAL_USERS` | `true` | Local users are disabled completely: register and login return `403`, and `@requires_auth` rejects tokens of local users (including refresh tokens issued before the switch). Implies registration is off. |
+| `ENABLE_LOCAL_USERS` | Behaviour |
+|---|---|
+| `true` | `PUT /auth/register` and `POST /auth/login` work, and local users can use protected endpoints. |
+| unset, `false` or invalid | Register and login return `403`, and `@requires_auth` rejects tokens of local users, including refresh tokens issued before the switch. |
 
-Keycloak login (`POST /auth/keycloak`) is not affected by either flag.
+Keycloak login (`POST /auth/keycloak`) is not affected. Users created with `db_manage.py add-user` are local users too, so they can log in only when the flag is `true`.
 
-The backend advertises the current settings on the root endpoint (`GET /` returns `local_users_enabled` and `registration_enabled`). The UI reads them during its reachability check and hides the "use password login" option when local users are disabled, so no separate frontend setting is needed.
+The backend advertises the setting on the root endpoint (`GET /` returns `local_users_enabled`). The UI reads it during its reachability check and hides the "use password login" option when local users are disabled, so no separate frontend setting is needed.
 
 ## Demo Mode
 
@@ -155,7 +155,7 @@ All protected endpoints use the `@requires_auth()` decorator, which:
 1. Extracts the JWT access token from the `access_token` cookie
 2. Decodes and validates the token (signature, expiry)
 3. Loads the `UserModel` from the database
-4. Rejects local (`YaptideUserModel`) users with `403` when `ENABLE_LOCAL_USERS` is off
+4. Rejects local (`YaptideUserModel`) users with `403` unless `ENABLE_LOCAL_USERS=true`
 5. Injects the `user` object into the Flask request context
 
 ```python

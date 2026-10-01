@@ -26,7 +26,7 @@ Two authentication modes:
 
 Protected endpoints return `401 Unauthorized` if no valid token is present.
 
-Native auth can be disabled per instance (see [Keycloak-only deployments](/for_developers/architecture/auth-model/#keycloak-only-deployments)). The root endpoint reports which methods are available:
+Native auth is disabled unless the backend sets `ENABLE_LOCAL_USERS=true` (see [Keycloak-only deployments](/for_developers/architecture/auth-model/#keycloak-only-deployments)). The root endpoint reports whether it is enabled:
 
 ```http
 GET /
@@ -35,8 +35,7 @@ GET /
 ```json
 {
     "message": "Hello World!",
-    "local_users_enabled": true,
-    "registration_enabled": true
+    "local_users_enabled": true
 }
 ```
 

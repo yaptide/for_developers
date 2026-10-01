@@ -123,8 +123,7 @@ Set these in a `.env` file in the `yaptide/` root or pass them via Docker:
 | `KEYCLOAK_BASE_URL` | Keycloak server URL |
 | `KEYCLOAK_REALM` | Keycloak realm |
 | `CERT_AUTH_URL` | PLGrid cert-auth service URL |
-| `ENABLE_USER_REGISTRATION` | Allow self-registration of local users. `docker-compose.yml` defaults it to `false` |
-| `ENABLE_LOCAL_USERS` | Allow local (username/password) users at all. Defaults to `true`; set to `false` for Keycloak-only instances |
+| `ENABLE_LOCAL_USERS` | Allow local (username/password) users. Defaults to `false` (Keycloak-only); set to `true` to log in with users created by `db_manage.py add-user` |
 
 See [Keycloak-only deployments](/for_developers/architecture/auth-model/#keycloak-only-deployments) for details.
 

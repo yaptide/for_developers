@@ -38,6 +38,12 @@ Navigate to the `yaptide/` directory:
 cd yaptide
 ```
 
+Local (username/password) users are disabled by default. To log in with the user created below, create a `.env` file in the `yaptide/` directory first:
+
+```bash title="yaptide/.env"
+ENABLE_LOCAL_USERS=true
+```
+
 Two startup options are available:
 
 **Standard mode** — builds and starts all containers:
