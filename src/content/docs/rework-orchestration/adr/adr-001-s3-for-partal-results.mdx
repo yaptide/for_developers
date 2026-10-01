@@ -1,0 +1,147 @@
+---
+title: "ADR-001: Use S3-Compatible Storage for Partial Simulation Results"
+description: "Store simulation result chunks in S3/MinIO instead of Redis/PostgreSQL."
+status: proposed
+date: 2026-01-15
+authors: [yaptide-team]
+tags: [storage, partial-results, s3, minio]
+related-issues:
+  - yaptide/yaptide#NNN
+supersedes: null
+superseded-by: null
+---
+
+# ADR-001: Use S3-Compatible Storage for Partial Simulation Results
+
+## Context
+
+Current architecture stores all simulation results (estimators, pages) in PostgreSQL as gzip-compressed JSON blobs. This works but creates bottlenecks:
+
+- **Large payloads** (up to 1 GB merged) block DB writes
+- **No partial availability** — results only visible after COMPLETED
+- **Redis pressure** — Celery result backend shares infrastructure with control plane
+
+Researchers need **partial results during RUNNING** to catch misconfigurations early (target: \<30 seconds to first insight).
+
+## Decision Drivers
+
+| Driver | Priority | Description |
+|--------|----------|-------------|
+| Partial result streaming | High | Must enable chunked upload during simulation |
+| Payload size | High | Must handle up to 1 GB merged results |
+| Deployment compatibility | High | Must work on PLGrid (no persistent S3) and cloud (MinIO OK) |
+| Operational complexity | Medium | Should not add significant operational burden |
+| Browser accessibility | Medium | UI must fetch chunks efficiently |
+
+## Considered Options
+
+### Option A: PostgreSQL BLOBs (Current)
+
+**Description:** Continue storing all results in PostgreSQL `PageModel.compressed_data`.
+
+**Pros:**
+- ✅ No new infrastructure
+- ✅ Transactional consistency
+- ✅ Existing backup/restore workflows
+
+**Cons:**
+- ❌ No partial availability (write-on-commit)
+- ❌ DB write bottleneck for large results
+- ❌ No chunked retrieval (must fetch entire page)
+
+**Effort:** None (status quo)
+
+### Option B: Redis as Result Store
+
+**Description:** Use Redis (existing broker) for result caching, PostgreSQL for metadata only.
+
+**Pros:**
+- ✅ Fast reads (in-memory)
+- ✅ No new infrastructure
+
+**Cons:**
+- ❌ Memory pressure on broker
+- ❌ Volatile (results lost on restart)
+- ❌ Not suitable for large payloads (>1 GB)
+
+**Effort:** Low (1-2 weeks)
+
+### Option C: S3-Compatible Object Storage (Recommended)
+
+**Description:** Deploy MinIO (cloud) or use PLGrid S3 (HPC) for result chunks. PostgreSQL stores metadata + chunk URLs only.
+
+**Pros:**
+- ✅ Native chunked upload (partial results during RUNNING)
+- ✅ Decouples data-plane from control-plane
+- ✅ Scalable to TB-scale results
+- ✅ Browser-accessible via presigned URLs
+- ✅ Compression (ZSTD/LZ4) at object level
+
+**Cons:**
+- ⚠️ New infrastructure (MinIO deployment)
+- ⚠️ PLGrid S3 availability uncertain (need HPC ops confirmation)
+- ⚠️ Migration path for existing results
+
+**Effort:** Medium (4-6 weeks including PoC)
+
+
+## Decision Outcome
+
+**Chosen option:** "Option C: S3-Compatible Object Storage"
+
+**Justification:**
+
+Object storage is the only option that satisfies **partial result streaming** (Driver 1) and **large payload handling** (Driver 2) simultaneously. The operational complexity (MinIO deployment) is a one-time cost that pays off in scalability and user experience.
+
+**Confirmation:** PoC will validate:
+- Chunked upload via Arrow Flight
+- Presigned URL generation for UI fetch
+- MinIO deployment in Docker Compose
+
+## Consequences
+
+### Positive
+
+- Partial results available ~30 seconds after simulation start
+- PostgreSQL relieved of large BLOB storage (metadata only)
+- Redis broker isolated from data-plane traffic
+- Browser can fetch chunks directly (no backend proxy needed)
+- Enables Phase 3 distributed merge (S3 Select / Cloud Functions)
+
+### Negative
+
+- New infrastructure to deploy and monitor (MinIO)
+- Migration complexity for existing simulations (v1→v2)
+- PLGrid S3 may not be available (fallback to MinIO required)
+
+### Neutral
+
+- Result retrieval API changes (`GET /chunks/{page_id}` vs `GET /results`)
+- UI must handle chunked fetch + partial rendering
+- Backup strategy includes S3 bucket (not just PostgreSQL dump)
+
+## Implementation Plan
+
+| Task | Owner | Timeline |
+|------|-------|----------|
+| MinIO Docker Compose setup | @devops | Week 1-2 |
+| S3 chunk upload integration (Flight) | @backend | Week 3-6 |
+| Presigned URL API endpoint | @backend | Week 4 |
+| UI chunk fetch + Arrow.js parsing | @frontend | Week 5-7 |
+| Migration guide (v1→v2) | @tech-writer | Week 8 |
+
+## Validation Criteria
+
+- [ ] Partial results visible in UI within 30 seconds of job start
+- [ ] No PostgreSQL BLOB writes >10 MB
+- [ ] UI can fetch 100 MB chunk in \<5 seconds
+- [ ] MinIO storage grows linearly with simulation count
+
+## References
+
+- [Research Session 002: S3 vs Redis Tradeoffs](/rework-orchestration/research/session-002-s3-vs-redis-tradeoffs)
+- [Design: Partial Results Streaming](/rework-orchestration/design/partial-results-streaming)
+- [MinIO Documentation](https://min.io/docs)
+
+
+**Last updated:** 2026-04-30 */

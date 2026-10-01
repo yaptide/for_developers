@@ -1,0 +1,173 @@
+---
+title: "ADR-002: Arrow IPC as Primary Binary Format for Result Transport"
+description: "Use Apache Arrow IPC for result serialization instead of JSON."
+status: proposed
+date: 2026-01-15
+authors: [yaptide-team]
+tags: [binary-format, arrow, serialization, performance]
+related-issues:
+  - yaptide/yaptide#NNN
+supersedes: null
+superseded-by: null
+---
+
+# ADR-002: Arrow IPC as Primary Binary Format for Result Transport
+
+## Context
+
+Current architecture uses JSON for all result transport:
+- Simulator output → JSON → Redis → PostgreSQL
+- Multiple serialize/deserialize cycles
+- Python object overhead (2-3× memory footprint)
+
+Need a binary format that:
+- Minimizes serialization overhead
+- Supports partial reads (streaming)
+- Is browser-parseable (UI rendering)
+- Integrates with NumPy/Polars for merge
+- Has compression support (ZSTD/LZ4)
+
+## Decision Drivers
+
+| Driver | Priority | Description |
+|--------|----------|-------------|
+| Serialization speed | High | Must reduce encode/decode time by 10× |
+| Memory footprint | High | Must eliminate Python object overhead |
+| Browser support | High | UI must parse without plugins |
+| Ecosystem integration | Medium | Must work with NumPy, Polars, Python |
+| Compression | Medium | Should support efficient compression |
+
+## Considered Options
+
+### Option A: JSON + gzip (Current)
+
+**Description:** Continue using JSON with gzip compression.
+
+**Pros:**
+- ✅ Universal support (Python, JavaScript, any language)
+- ✅ Human-readable (debugging friendly)
+- ✅ No new dependencies
+
+**Cons:**
+- ❌ Slow parse (O(n) string processing)
+- ❌ High memory (2-3× data size in Python objects)
+- ❌ No type information (all numbers become float64)
+- ❌ No partial reads (must parse entire document)
+
+**Effort:** None (status quo)
+
+### Option B: MessagePack / pickle
+
+**Description:** Binary serialization formats with Python support.
+
+**Pros:**
+- ✅ Faster than JSON (binary encoding)
+- ✅ Smaller payload (no string overhead)
+- ✅ Python native (pickle)
+
+**Cons:**
+- ❌ Browser support requires additional libraries
+- ❌ Pickle is Python-specific (not portable)
+- ❌ No schema evolution support
+- ❌ No partial reads
+
+**Effort:** Low (2-3 weeks)
+
+### Option C: Apache Arrow IPC (Recommended)
+
+**Description:** Columnar binary format with native Python and JavaScript support.
+
+**Pros:**
+- ✅ Zero-copy memory access (minimal parse overhead)
+- ✅ 1× memory footprint (contiguous buffers)
+- ✅ Native NumPy/Polars integration (`to_numpy()`)
+- ✅ Browser support via Arrow.js
+- ✅ Streaming/iterative reads (RecordBatch)
+- ✅ Schema preservation (types, metadata)
+- ✅ Compression support (ZSTD, LZ4)
+
+**Cons:**
+- ⚠️ New dependency (pyarrow, arrow-js)
+- ⚠️ Team learning curve (Arrow API)
+- ⚠️ Larger than JSON for very small payloads (\<1 KB)
+
+**Effort:** Medium (4-6 weeks)
+
+### Option D: Parquet
+
+**Description:** Columnar storage format built on Arrow.
+
+**Pros:**
+- ✅ Excellent compression
+- ✅ Predicate pushdown (query optimization)
+- ✅ Ecosystem support (Spark, pandas, DuckDB)
+
+**Cons:**
+- ❌ Not designed for streaming (file-based)
+- ❌ Browser support limited (no native Arrow.js Parquet)
+- ❌ Overkill for single-write, single-read pattern
+
+**Effort:** Medium (4-6 weeks)
+
+## Decision Outcome
+
+**Chosen option:** "Option C: Apache Arrow IPC"
+
+**Justification:**
+
+Arrow IPC is the only format that satisfies **streaming partial reads** (Driver 2) and **browser parseability** (Driver 3) while providing **NumPy integration** (Driver 4) for the merge pipeline. The columnar layout matches YAPTIDE's data structure (estimators → pages → numeric arrays) perfectly.
+
+**Confirmation:** PoC will validate:
+- pyarrow serialization time vs JSON
+- Arrow.js parse time in browser
+- Compression ratio (ZSTD vs gzip)
+
+## Consequences
+
+### Positive
+
+- 10-100× faster serialization/deserialization
+- 75% memory footprint reduction (no Python objects)
+- Zero-copy merge operations (direct NumPy access)
+- Partial result streaming (RecordBatch iteration)
+- Schema evolution support (backward compatibility)
+- Future-proof (industry standard: pandas, Spark, DuckDB)
+
+### Negative
+
+- New dependency chain (pyarrow, arrow-js)
+- Team requires Arrow API training
+- Slightly larger payloads for very small results (\<1 KB)
+
+### Neutral
+
+- Result files are binary (not human-readable)
+- Debugging requires Arrow tools (e.g., `arrow cat`)
+- Migration requires format conversion for v1 results
+
+## Implementation Plan
+
+| Task | Owner | Timeline |
+|------|-------|----------|
+| pyarrow integration (worker) | @backend | Week 1-3 |
+| Arrow IPC → S3 chunk upload | @backend | Week 3-4 |
+| Arrow.js UI integration | @frontend | Week 4-6 |
+| JSRoot + Arrow adapter | @frontend | Week 5-7 |
+| Format conversion tool (v1→v2) | @backend | Week 8 |
+
+## Validation Criteria
+
+- [ ] Serialization time reduced by >10× vs JSON
+- [ ] Memory footprint \<1.2× raw data size (\<1 KB)
+- [ ] Arrow.js parses 100 MB chunk in \<2 seconds
+- [ ] NumPy merge achieves >10× speedup
+
+## References
+
+- [Research Session 003: Binary Format Comparison](/rework-orchestration/research/session-003-binary-format)
+- [Apache Arrow Documentation](https://arrow.apache.org/docs)
+- [ADR-001: S3 Storage](/rework-orchestration/adr/adr-001-s3-for-partial-results)
+
+---
+
+**Last updated:** 2026-04-30
