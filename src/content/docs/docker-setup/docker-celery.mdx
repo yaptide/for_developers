@@ -126,6 +126,10 @@ docker compose up
 
 Open **http://localhost** and log in using credentials you created (username: `admin`, password: `password`). The setup is complete now.
 
+:::tip[Login fails with 403?]
+If logging in shows *Local user login is disabled on this instance*, the backend was started without `ENABLE_LOCAL_USERS=true`. Local users are disabled by default, so add it to `yaptide/.env` as described above and re-run the start script, which recreates the containers with the new setting.
+:::
+
 :::caution
   With a Chromium-based browser, use `https://localhost:8443` as the backend URL instead of `http://localhost:5000` to avoid cookie issues with browser security policies.
 ```bash title="ui/.env"

@@ -268,6 +268,10 @@ npm run start
 
 Open **http://localhost:3000**. Log in with the credentials you created (username: `admin`, password: `password`). The setup is complete now. The page reloads on edits.
 
+:::tip[Login fails with 403?]
+If logging in shows *Local user login is disabled on this instance*, the backend was started without `ENABLE_LOCAL_USERS=true`. Local users are disabled by default, so add `ENABLE_LOCAL_USERS=true` to the Flask command in [step 6](#6-start-the-flask-api) and restart it.
+:::
+
 :::caution
 Access both frontend and backend using the **same domain** — either both `localhost` or both `127.0.0.1`. Mixing them breaks cookie-based authentication (`SameSite=Lax` policy).
 :::
