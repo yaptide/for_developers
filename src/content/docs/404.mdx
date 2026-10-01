@@ -1,0 +1,31 @@
+---
+title: Page not found
+template: splash
+editUrl: false
+pagefind: false
+hero:
+  title: "404: Page not found"
+  tagline: This page doesn't exist or was moved. Try the search bar, or start from one of the links below.
+  image:
+    file: ../../assets/yaptide-logo.svg
+  actions:
+    - text: Back to developer docs
+      link: /for_developers/
+      icon: left-arrow
+    - text: Report a broken link
+      link: https://github.com/yaptide/for_developers/issues/new
+      icon: github
+      variant: minimal
+---
+
+import { CardGrid, LinkCard } from "@astrojs/starlight/components";
+
+## Popular pages
+
+<CardGrid>
+  <LinkCard title="Frontend Demo setup" href="/for_developers/local-setup/local-frontend-demo/" description="Run the editor in your browser with no backend." />
+  <LinkCard title="System Overview" href="/for_developers/architecture/overview/" description="How the frontend, backend, and workers fit together." />
+  <LinkCard title="API Reference" href="/for_developers/backend/api-reference/" description="Interactive OpenAPI docs for the backend." />
+</CardGrid>
+
+Looking for help using YAPTIDE rather than developing it? See the [user documentation](https://yaptide.github.io/docs/).
