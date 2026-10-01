@@ -26,6 +26,20 @@ Two authentication modes:
 
 Protected endpoints return `401 Unauthorized` if no valid token is present.
 
+Native auth can be disabled per instance (see [Keycloak-only deployments](/for_developers/architecture/auth-model/#keycloak-only-deployments)). The root endpoint reports which methods are available:
+
+```http
+GET /
+```
+
+```json
+{
+    "message": "Hello World!",
+    "local_users_enabled": true,
+    "registration_enabled": true
+}
+```
+
 ## Endpoint Groups
 
 | Group | Prefix | Description |
@@ -79,7 +93,7 @@ These require an `update_key` (shared secret) rather than user authentication.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/` | No | Health check |
+| GET | `/` | No | Health check, available login methods |
 | PUT | `/auth/register` | No | Register user |
 | POST | `/auth/login` | No | Log in |
 | GET | `/auth/refresh` | Yes | Refresh token |

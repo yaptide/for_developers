@@ -3,6 +3,10 @@ title: Auth Endpoints
 description: Authentication and session management API.
 ---
 
+:::note
+Native username/password auth can be disabled per instance with the `ENABLE_USER_REGISTRATION` and `ENABLE_LOCAL_USERS` environment variables. See [Keycloak-only deployments](/for_developers/architecture/auth-model/#keycloak-only-deployments).
+:::
+
 ## Register
 
 Create a new local user account.
@@ -28,7 +32,7 @@ Content-Type: application/json
 
 **Errors:**
 - `400` — Missing username or password
-- `403` — Registration is disabled on this instance
+- `403` — User already exists, or registration is disabled on this instance (`ENABLE_USER_REGISTRATION` or `ENABLE_LOCAL_USERS` set to `false`)
 
 ---
 
@@ -63,6 +67,7 @@ Content-Type: application/json
 **Errors:**
 - `401` — Invalid credentials
 - `400` — Missing fields
+- `403` — Local users are disabled on this instance (`ENABLE_LOCAL_USERS=false`)
 
 ---
 
@@ -89,6 +94,7 @@ Cookie: refresh_token=<jwt>
 
 **Errors:**
 - `401` — Invalid or expired refresh token
+- `403` — Local users are disabled on this instance (`ENABLE_LOCAL_USERS=false`)
 
 ---
 
@@ -112,6 +118,8 @@ Cookie: access_token=<jwt>
 ```
 
 The `source` field indicates the authentication provider: `"local"` or `"keycloak"`.
+
+When `ENABLE_LOCAL_USERS=false`, this and every other protected endpoint return `403` for local users, even with a token issued before the switch.
 
 ---
 

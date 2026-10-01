@@ -129,6 +129,19 @@ The backend also:
 
 [Local SLURM setup](/for_developers/local-setup/local-slurm/) emulates the PLGrid auth infrastructure locally. It creates a Keycloak instance and a mock certificate authority server. Keycloak config can be viewed [here](https://github.com/yaptide/yaptide/blob/68bbbf86a37b120a2708fe515e8256f1e23f28a7/slurm/keycloak/yaptide-realm.json). The mock certificate authority uses the private key `/slurm/ca_key/ca_key` to sign the certs. Entrypoint script puts the public key `/slurm/ca_key/ca_key.pub` into the Slurm cluster and configures it to trust any certificates signed by that authority.
 
+## Keycloak-Only Deployments
+
+Instances that authenticate exclusively through Keycloak (e.g. `yaptide.c3.plgrid.pl`) can switch native auth off with backend environment variables. Values `false`, `0`, `no`, `off` and empty disable a flag; when unset, both flags are enabled.
+
+| Variable | Default | Effect when set to `false` |
+|---|---|---|
+| `ENABLE_USER_REGISTRATION` | `true` (`false` in `docker-compose.yml`) | `PUT /auth/register` returns `403`. Existing local users can still log in. |
+| `ENABLE_LOCAL_USERS` | `true` | Local users are disabled completely: register and login return `403`, and `@requires_auth` rejects tokens of local users (including refresh tokens issued before the switch). Implies registration is off. |
+
+Keycloak login (`POST /auth/keycloak`) is not affected by either flag.
+
+The backend advertises the current settings on the root endpoint (`GET /` returns `local_users_enabled` and `registration_enabled`). The UI reads them during its reachability check and hides the "use password login" option when local users are disabled, so no separate frontend setting is needed.
+
 ## Demo Mode
 
 When `REACT_APP_TARGET=demo`, authentication is bypassed entirely and only in-browser Geant4 simulations are available. See [Frontend Demo — Local](/for_developers/local-setup/local-frontend-demo/) for setup instructions.
@@ -142,7 +155,8 @@ All protected endpoints use the `@requires_auth()` decorator, which:
 1. Extracts the JWT access token from the `access_token` cookie
 2. Decodes and validates the token (signature, expiry)
 3. Loads the `UserModel` from the database
-4. Injects the `user` object into the Flask request context
+4. Rejects local (`YaptideUserModel`) users with `403` when `ENABLE_LOCAL_USERS` is off
+5. Injects the `user` object into the Flask request context
 
 ```python
 @requires_auth()
