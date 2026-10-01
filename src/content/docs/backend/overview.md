@@ -102,6 +102,7 @@ All large data (input files, simulation results, logs) is **gzip-compressed** be
 | `KEYCLOAK_BASE_URL` | Keycloak server URL |
 | `KEYCLOAK_REALM` | Keycloak realm |
 | `CERT_AUTH_URL` | PLGrid SSH cert service URL |
+| `ENABLE_LOCAL_USERS` | Allow native username/password users (register, login). Default: disabled, so the instance is Keycloak-only |
 | `MAX_CORES` | CPU limit for simulation worker |
 | `LOG_LEVEL_ROOT` | Logging verbosity |
 

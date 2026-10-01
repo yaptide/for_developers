@@ -38,8 +38,11 @@ services:
 
 ## Quick Start
 
+Local (username/password) users are disabled by default, which makes the instance Keycloak-only. For local development and testing, enable them before starting the stack, otherwise the user created below cannot log in:
+
 ```bash
 cd yaptide
+echo "ENABLE_LOCAL_USERS=true" >> .env
 docker compose up --build -d
 ```
 
@@ -55,6 +58,8 @@ Create a user:
 docker compose exec yaptide_flask python -m yaptide.admin.db_manage add-user \
   --username admin --password admin123
 ```
+
+If the stack is already running, changing `.env` takes effect only after the Flask container is recreated (`docker compose up -d yaptide_flask`); `docker compose restart` keeps the old environment.
 
 ## Compose Variants
 
@@ -123,6 +128,9 @@ Set these in a `.env` file in the `yaptide/` root or pass them via Docker:
 | `KEYCLOAK_BASE_URL` | Keycloak server URL |
 | `KEYCLOAK_REALM` | Keycloak realm |
 | `CERT_AUTH_URL` | PLGrid cert-auth service URL |
+| `ENABLE_LOCAL_USERS` | Allow local (username/password) users. Defaults to `false` (Keycloak-only); set to `true` to log in with users created by `db_manage.py add-user` |
+
+See [Keycloak-only deployments](/for_developers/architecture/auth-model/#keycloak-only-deployments) for details.
 
 ### Simulator Storage (S3)
 
