@@ -10,20 +10,24 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/react": "^5.0.3",
+    "@astrojs/markdown-remark": "^7.3.5",
+    "@astrojs/react": "^7.1.2",
     "@astrojs/sitemap": "3.7.4",
-    "@astrojs/starlight": "^0.38.3",
+    "@astrojs/starlight": "^0.42.8",
     "@pasqal-io/starlight-client-mermaid": "^0.1.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "astro": "^6.3.1",
+    "astro": "^7.4.5",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "sharp": "^0.34.5",
     "swagger-ui-react": "^5.32.5"
   },
   "overrides": {
-    "@astrojs/sitemap": "3.7.4"
+    "@astrojs/sitemap": "3.7.4",
+    "@pasqal-io/starlight-client-mermaid": {
+      "@astrojs/markdown-remark": "$@astrojs/markdown-remark"
+    }
   },
   "devDependencies": {
     "@types/swagger-ui-react": "^5.18.0"
