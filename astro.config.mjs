@@ -3,16 +3,20 @@ import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import react from "@astrojs/react";
 import starlightClientMermaid from "@pasqal-io/starlight-client-mermaid";
+import { unified } from "@astrojs/markdown-remark";
 
 // https://astro.build/config
 export default defineConfig({
   site: "https://yaptide.github.io",
   base: "/for_developers",
+  compressHTML: true,
+  markdown: {
+    processor: unified(),
+  },
   integrations: [
     react(),
     starlight({
       title: "YAPTIDE Developers",
-      tagline: "A web-based IDE for Monte Carlo particle transport simulations",
       logo: {
         light: "./src/assets/yaptide-logo.svg",
         dark: "./src/assets/yaptide-logo.svg",
@@ -85,19 +89,19 @@ export default defineConfig({
             { label: "Vision", slug: "rework-orchestration" },
             {
               label: "Context & Constraints",
-              autogenerate: { directory: "rework-orchestration/context" },
+              items: [{ autogenerate: { directory: "rework-orchestration/context" } }],
             },
             {
               label: "Architecture Decisions",
-              autogenerate: { directory: "rework-orchestration/adr" },
+              items: [{ autogenerate: { directory: "rework-orchestration/adr" } }],
             },
             {
               label: "Design Documents",
-              autogenerate: { directory: "rework-orchestration/design" },
+              items: [{ autogenerate: { directory: "rework-orchestration/design" } }],
             },
             {
               label: "Research Sessions",
-              autogenerate: { directory: "rework-orchestration/research" },
+              items: [{ autogenerate: { directory: "rework-orchestration/research" } }],
             },
           ],
         },
