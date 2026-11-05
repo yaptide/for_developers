@@ -13,6 +13,8 @@ The frontend supports two authentication modes and a demo mode that bypasses aut
 | **Keycloak SSO** (PLGrid) | `REACT_APP_ALT_AUTH=plg` | Yes + Keycloak |
 | **Demo** (no auth) | `REACT_APP_TARGET=demo` | No |
 
+In Keycloak SSO mode the login panel also offers a "use password login" link. It is hidden when the backend reports `local_users_enabled: false` on `GET /` (read by the reachability check in `AuthService.tsx` and exposed as `localUsersEnabled` on the auth context). Backends that do not report the flag are treated as allowing local users.
+
 ## Standard Authentication
 
 ### Login Flow

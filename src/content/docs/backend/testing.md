@@ -126,7 +126,7 @@ def test_health_check(client):
 
 ### Authenticated Tests
 
-Most endpoints require authentication. Use the login fixture:
+Most endpoints require authentication. `pytest.ini` sets `ENABLE_LOCAL_USERS=true` so tests can register and log in local users:
 
 ```python
 def test_submit_simulation(client):

@@ -176,14 +176,14 @@ Open a third backend terminal and go to the `yaptide/` directory. Run:
 <TabItem label="Linux">
 
 ```bash
-FLASK_SQLALCHEMY_ECHO=True FLASK_USE_CORS=True FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite" CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run flask --debug --app yaptide.application run
+FLASK_SQLALCHEMY_ECHO=True FLASK_USE_CORS=True ENABLE_LOCAL_USERS=true FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite" CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run flask --debug --app yaptide.application run
 ```
 
 </TabItem>
 <TabItem label="Windows (PowerShell)">
 
 ```powershell
-$env:FLASK_SQLALCHEMY_ECHO="True"; $env:FLASK_USE_CORS="True"; $env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run flask --debug --app yaptide.application run
+$env:FLASK_SQLALCHEMY_ECHO="True"; $env:FLASK_USE_CORS="True"; $env:ENABLE_LOCAL_USERS="true"; $env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run flask --debug --app yaptide.application run
 ```
 
 </TabItem>
@@ -196,6 +196,8 @@ This creates `db.sqlite` inside `./instance/` (default [Flask instance folder](h
 `--debug` flag enables Flask debug messages and auto-reload on code changes.
 
 `FLASK_SQLALCHEMY_ECHO=True` enables SQL query logging for debugging database interactions.
+
+`ENABLE_LOCAL_USERS=true` allows logging in with a username and password. Local users are disabled by default, so without it the login in the next steps fails with `403`.
 
 ### 7. Create a user
 
@@ -265,6 +267,10 @@ npm run start
 ```
 
 Open **http://localhost:3000**. Log in with the credentials you created (username: `admin`, password: `password`). The setup is complete now. The page reloads on edits.
+
+:::tip[Login fails with 403?]
+If logging in shows *Local user login is disabled on this instance*, the backend was started without `ENABLE_LOCAL_USERS=true`. Local users are disabled by default, so add `ENABLE_LOCAL_USERS=true` to the Flask command in [step 6](#6-start-the-flask-api) and restart it.
+:::
 
 :::caution
 Access both frontend and backend using the **same domain** — either both `localhost` or both `127.0.0.1`. Mixing them breaks cookie-based authentication (`SameSite=Lax` policy).
