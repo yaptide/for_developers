@@ -3,7 +3,7 @@ title: Frontend Testing
 description: Testing strategy and patterns for the YAPTIDE frontend.
 ---
 
-The frontend uses **Jest** with **React Testing Library** for unit and component tests.
+The frontend uses **Jest** for unit tests and, together with **Selenium WebDriver**, for end-to-end tests that drive the running app in a browser.
 
 ## Running Tests
 
@@ -29,21 +29,13 @@ src/
 │   ├── commands/           # Editor command tests
 │   ├── components/         # React component tests
 │   └── services/           # Service logic tests
-├── ThreeEditor/
-│   └── __tests__/          # Editor-specific tests (co-located)
-└── setupTests.ts           # Global test setup
+└── ThreeEditor/
+    └── __tests__/          # Editor-specific tests (co-located)
 ```
 
 ## Test Setup
 
-`setupTests.ts` configures the test environment:
-
-```typescript
-import '@testing-library/jest-dom';
-
-// Mock Web Workers (not available in jsdom)
-// Mock Pyodide, Geant4 Wasm, etc.
-```
+There is no global setup file (`src/setupTests.ts`). Tests use Jest's built-in matchers (`toBe`, `toEqual`, `toMatchObject`, ...). A test that needs extra matchers registers them itself, e.g. `Units.test.ts` calls `expect.extend()` with matchers from `jest-matcher-deep-close-to`.
 
 ## Testing Editor Commands
 
@@ -80,27 +72,43 @@ describe('AddFigureCommand', () => {
 });
 ```
 
-## Testing React Components
+## End-to-End Tests
 
-Use React Testing Library for component tests:
+UI behaviour is tested end to end with Selenium WebDriver in headless Chrome (see `ProjectMenu.test.ts`, `SimulationControls.test.ts` and the converter tests in `src/__tests__/`). These tests open the app at `http://localhost:3000`, so start it with `npm start` before running `npm test`.
 
 ```typescript
-import { render, screen, fireEvent } from '@testing-library/react';
+import { Builder, By, until, WebDriver } from 'selenium-webdriver';
+import chrome from 'selenium-webdriver/chrome';
 
-describe('LoginPanel', () => {
-  test('shows error on invalid credentials', async () => {
-    render(<LoginPanel />);
+describe('Navigation', () => {
+  let driver: WebDriver;
 
-    fireEvent.change(screen.getByLabelText('Username'), {
-      target: { value: 'wrong' }
-    });
-    fireEvent.change(screen.getByLabelText('Password'), {
-      target: { value: 'wrong' }
-    });
-    fireEvent.click(screen.getByText('Log in'));
+  beforeAll(async () => {
+    driver = await new Builder()
+      .forBrowser('chrome')
+      .setChromeOptions(new chrome.Options().addArguments('--headless') as chrome.Options)
+      .build();
+  }, 30_000);
 
-    expect(await screen.findByText(/invalid/i)).toBeInTheDocument();
-  });
+  afterAll(async () => {
+    await driver.quit();
+  }, 30_000);
+
+  test('opens the Examples tab', async () => {
+    await driver.get('http://localhost:3000');
+
+    const examplesButton = await driver.wait(
+      until.elementLocated(By.xpath("//div[@aria-label = 'Examples']")),
+      5_000
+    );
+    await examplesButton.click();
+
+    const activeTab = await driver.wait(
+      until.elementLocated(By.xpath("//div[@aria-label = 'Examples' and @aria-selected = 'true']")),
+      10_000
+    );
+    expect(activeTab).toBeTruthy();
+  }, 30_000);
 });
 ```
 
@@ -182,7 +190,7 @@ npx prettier --write src/
 
 ## Best Practices
 
-- **Test behavior, not implementation** — use `screen.getByText()` over component internals
+- **Test behavior, not implementation** — find elements by visible text or `aria-*` attributes, not by component internals
 - **Test commands thoroughly** — they are the backbone of editor state management
 - **Mock at boundaries** — mock Web Workers, APIs, and Three.js rendering, not React components
 - **Keep fixtures simple** — use factory functions for creating test objects
