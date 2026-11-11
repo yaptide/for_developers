@@ -29,21 +29,13 @@ src/
 │   ├── commands/           # Editor command tests
 │   ├── components/         # React component tests
 │   └── services/           # Service logic tests
-├── ThreeEditor/
-│   └── __tests__/          # Editor-specific tests (co-located)
-└── setupTests.ts           # Global test setup
+└── ThreeEditor/
+    └── __tests__/          # Editor-specific tests (co-located)
 ```
 
 ## Test Setup
 
-`setupTests.ts` configures the test environment:
-
-```typescript
-import '@testing-library/jest-dom';
-
-// Mock Web Workers (not available in jsdom)
-// Mock Pyodide, Geant4 Wasm, etc.
-```
+There is no global setup file (`src/setupTests.ts`). Tests use Jest's built-in matchers (`toBe`, `toEqual`, `toMatchObject`, ...). A test that needs extra matchers registers them itself, e.g. `Units.test.ts` calls `expect.extend()` with matchers from `jest-matcher-deep-close-to`.
 
 ## Testing Editor Commands
 
