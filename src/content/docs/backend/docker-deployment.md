@@ -12,7 +12,7 @@ The backend deployment uses **Docker Compose** with 6 services. This is the reco
 services:
   redis:          # Celery broker + result backend
   postgresql:     # Primary database
-  yaptide_flask:  # Flask API server
+  yaptide_flask:  # Flask API server (gunicorn)
   yaptide_simulation_worker:  # Celery simulation worker
   yaptide_helper_worker:      # Celery helper worker
   nginx:          # Reverse proxy with TLS
@@ -24,10 +24,31 @@ services:
 |---|---|---|---|
 | `redis` | `redis:8-alpine` | 6379 (internal) | Celery message broker and result backend |
 | `postgresql` | `postgres:16-alpine` | 5432 (internal) | Primary database, persisted via named volume |
-| `yaptide_flask` | `Dockerfile-flask` | 6000 (internal) | Flask API server |
+| `yaptide_flask` | `Dockerfile-flask` | 6000 (internal) | Flask API server under gunicorn, migrates the database on start |
 | `yaptide_simulation_worker` | `Dockerfile-simulation-worker` | — | Runs simulator binaries via Celery |
 | `yaptide_helper_worker` | `Dockerfile-helper-worker` | — | Batch job submission and cleanup via Celery |
 | `nginx` | `Dockerfile-nginx` | 5000, 8443 | Reverse proxy with TLS termination |
+
+### Flask Server
+
+The `yaptide_flask` container starts `run_flask.sh`, which:
+
+1. Prepares the database once, before any worker starts (`prepare_database` in `yaptide/persistence/models.py`):
+   a database under migrations is upgraded to the latest revision; a new database is created from the models and
+   stamped with the latest revision. See [Database → Migration Workflow](/for_developers/backend/database/#migration-workflow).
+2. Starts **gunicorn** with the settings in `gunicorn.conf.py`: sync workers, `2 × CPUs + 1` by default, limited by
+   the container's memory (about 300 MB per worker) and capped at 32, each holding one PostgreSQL connection.
+
+All gunicorn workers sign and verify tokens with the same secrets, `YAPTIDE_TOKEN_SECRET` and
+`YAPTIDE_REFRESH_TOKEN_SECRET`. When they are not set, `run_flask.sh` generates them at start and logs a warning:
+every restart then invalidates logged-in sessions and the update keys of running HPC jobs, so set both in
+production.
+
+The service has a `stop_grace_period` of 40 s, longer than gunicorn's 30 s graceful shutdown, so requests in
+progress finish during a redeploy.
+
+Nginx resolves `yaptide_flask` through Docker's DNS on each request (cached for 10 s), so a restarted Flask
+container is reached at its new address without reloading nginx.
 
 ### Exposed Ports
 
@@ -43,7 +64,7 @@ cd yaptide
 docker compose up --build -d
 ```
 
-Wait for all services to be healthy:
+The database is created or migrated when `yaptide_flask` starts. Wait for all services to be healthy:
 
 ```bash
 docker compose ps
@@ -115,6 +136,10 @@ Set these in a `.env` file in the `yaptide/` root or pass them via Docker:
 | `BACKEND_EXTERNAL_URL` | `https://localhost:8443` | Public-facing URL |
 | `MAX_CORES` | (all) | CPU limit for simulation worker |
 | `LOG_LEVEL_ROOT` | `INFO` | Logging verbosity |
+| `YAPTIDE_TOKEN_SECRET` | (generated at start) | Secret for access tokens and simulation update keys, shared by all gunicorn workers |
+| `YAPTIDE_REFRESH_TOKEN_SECRET` | (generated at start) | Secret for refresh tokens, shared by all gunicorn workers |
+| `GUNICORN_WORKERS` | (sized to the container) | Number of gunicorn workers; above 32, raise PostgreSQL's `max_connections` to match |
+| `GUNICORN_TIMEOUT` | `300` | Seconds a worker may spend on one request (large `/results` uploads) |
 
 ### Authentication
 

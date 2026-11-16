@@ -3,7 +3,7 @@ title: Backend Testing
 description: Test structure, fixtures, and how to write tests for the YAPTIDE backend.
 ---
 
-The backend uses **pytest** with an in-memory SQLite database and an in-memory Celery broker. No external services are required to run tests.
+The backend uses **pytest** with an in-memory SQLite database and an in-memory Celery broker. No external services are required to run tests, except the migration tests, which need PostgreSQL.
 
 ## Running Tests
 
@@ -99,6 +99,8 @@ These fixtures load JSON from `tests/res/` resource files.
 | `test_download_shieldhit.py` | SHIELD-HIT12A binary download from S3 |
 | `test_download_fluka.py` | FLUKA binary download from S3 |
 | `test_download_topas.py` | TOPAS binary download from S3 |
+| `test_migrations.py` | Every migration up and down on PostgreSQL, data migrations, `prepare_database` |
+| `test_estimator_matching.py` | Estimators bound to the editor outputs by their result file (`POST /results`, `GET /results`) |
 
 ### Integration Tests
 
@@ -112,6 +114,19 @@ Located in `tests/integration/`:
 | `test_celery_tasks.py` | Celery task dispatch and completion |
 | `test_simulation_deletion.py` | Simulation and result cleanup |
 | `test_environment.py` | Environment variable handling |
+
+### Migration Tests
+
+`tests/test_migrations.py` needs an **empty PostgreSQL database** given in `TEST_DATABASE_URI`; without it the tests
+are skipped (SQLite cannot run all migrations). The tests run every migration from an empty database to the latest
+revision, back down and up again, check that the data migrations carry existing rows over, and that
+`prepare_database` creates a new database or upgrades a migrated one. Each test leaves the database empty.
+
+```bash
+docker run -d --rm --name yaptide-test-pg -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=migrations -p 55432:5432 postgres:16-alpine
+TEST_DATABASE_URI=postgresql+psycopg://postgres:pw@localhost:55432/migrations poetry run pytest tests/test_migrations.py
+docker stop yaptide-test-pg
+```
 
 ## Writing New Tests
 

@@ -184,47 +184,69 @@ This reduces storage for large simulation results (estimator pages can be severa
 
 ## Migration Workflow
 
-The project uses **Flask-Migrate** (Alembic) for schema changes.
+The project uses **Flask-Migrate** (Alembic) for schema changes. Migrations live in `migrations/versions/`.
+
+### Migrations on Start
+
+The database is brought to the current models when the Flask container starts, before gunicorn starts its workers
+(`run_flask.sh` calls `prepare_database` from `yaptide/persistence/models.py`):
+
+- A database with an `alembic_version` table is upgraded to the latest revision (`flask db upgrade`).
+- A database without it (a new one, or one whose tables were only ever created from the models) gets the missing
+  tables from the models and is stamped with the latest revision, so later migrations apply to it.
+
+The application never creates tables on import. The same step can be run by hand, e.g. for local development:
+
+```bash
+poetry run flask --app yaptide.application prepare-db
+```
+
+### Writing Migrations
+
+Every migration must be **reversible** and **independent of the current models**:
+
+- `downgrade()` undoes `upgrade()`, so a deployment can go back to the previous revision.
+- A migration never imports `yaptide.persistence.models`. The models follow the latest revision, and a migration runs
+  against a database at its own revision. A data migration describes the tables it reads and writes as they are at
+  its revision, with `sa.table(...)` / `sa.column(...)`, and works through `op.get_bind()` (see
+  `migrations/versions/41149fa64bd2_.py` and `5003b9acb1f4_.py`).
+- Use `op.batch_alter_table` for column changes, so they also run on SQLite. `migrations/env.py` turns SQLite's
+  foreign keys off during migrations, as batch operations recreate tables there.
 
 ### Creating a New Migration
 
-```bash
-# After modifying models.py
-poetry run flask --app yaptide.application db migrate -m "Add new column"
-
-# Review the generated migration in migrations/versions/
-# Then apply:
-poetry run flask --app yaptide.application db upgrade
-```
-
-### Development Workflow
-
 1. Modify `persistence/models.py`
-2. Generate migration: `flask db migrate -m "description"`
-3. Review the auto-generated migration script
-4. Test locally: `flask db upgrade`
+2. Generate the migration against a database at the latest revision:
+   `poetry run flask --app yaptide.application db migrate -m "description"`
+3. Review the generated script in `migrations/versions/`, write its `downgrade()` and any data migration
+4. Run `tests/test_migrations.py` against PostgreSQL (see [Testing → Migration Tests](/for_developers/backend/testing/#migration-tests))
 5. Commit the migration file alongside the model changes
 
 ### Production Migration
 
-> Always back up the database before running migrations in production.
+> Always back up the database before deploying a version with new migrations.
 
 ```bash
 # Backup
 docker compose exec postgresql pg_dump -U yaptide yaptide > backup.sql
+```
 
-# Apply migration
-docker compose exec yaptide_flask flask --app yaptide.application db upgrade
+The new migrations are applied when the new `yaptide_flask` container starts. To go back one revision before
+deploying the previous version:
+
+```bash
+docker compose exec yaptide_flask flask --app yaptide.application db downgrade
 ```
 
 ### Testing Migrations
 
-To test a migration against a copy of the production database:
+`tests/test_migrations.py` runs every migration up and down on an empty PostgreSQL database and checks that the data
+migrations carry existing rows over. To test a migration against a copy of the production database:
 
 1. Dump production: `pg_dump -U yaptide yaptide > prod_backup.sql`
 2. Load into a test database: `psql -U yaptide test_db < prod_backup.sql`
 3. Point `FLASK_SQLALCHEMY_DATABASE_URI` at the test DB
-4. Run `flask db upgrade`
+4. Run `flask --app yaptide.application db upgrade`, then `db downgrade` back to the previous revision
 5. Verify the application works correctly
 
 ## Database Access from Outside Docker
