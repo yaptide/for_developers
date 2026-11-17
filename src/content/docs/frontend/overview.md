@@ -18,7 +18,7 @@ The YAPTIDE frontend is a **React** single-page application that provides a 3D s
 | Geant4 in browser | Geant4 WebAssembly (Web Worker) |
 | Result rendering | JSRoot |
 | Build system | Create React App + react-app-rewired |
-| Testing | Jest + React Testing Library |
+| Testing | Jest + Selenium WebDriver (E2E) |
 
 ## Architecture
 
