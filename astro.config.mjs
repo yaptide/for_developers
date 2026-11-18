@@ -146,6 +146,7 @@ export default defineConfig({
               label: "Simulation Services",
               slug: "frontend/simulation-services",
             },
+            { label: "Results Loading", slug: "frontend/results-loading" },
             {
               label: "Pyodide Converter",
               slug: "frontend/pyodide-converter",
