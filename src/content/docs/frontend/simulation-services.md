@@ -169,6 +169,8 @@ interface Page {
 }
 ```
 
+The remote service gets pages from the backend either inline as JSON or as signed links to Zarr arrays in object storage, and fetches 2D and 3D pages only when they are shown. See [Results Loading](/for_developers/frontend/results-loading/).
+
 This is rendered by the JSRoot integration in `JsRoot/`:
 - **1D data** (e.g., depth-dose): line plots / histograms
 - **2D data** (e.g., spatial dose maps): color map / contour plots
