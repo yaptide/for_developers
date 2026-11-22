@@ -108,13 +108,40 @@ Then run the download with S3 and decryption enabled:
 The free demo binary is sufficient for development and testing. The full licensed version of SHIELD-HIT12A (and FLUKA) requires S3 access and an encryption key — contact your institution or the SHIELD-HIT12A team for access.
 :::
 
-### 3. Start Redis
+### 3. Start Redis and the results bucket
 
 Redis is the message broker between Flask and the Celery workers.
 The simplest approach is a Docker container:
 
 ```bash
 docker run --detach --publish 6379:6379 --name yaptide_redis_local redis:7-alpine
+```
+
+Result pages are kept in an S3 bucket. Start Garage, the S3 server the Docker deployment uses, from the `yaptide/`
+directory (the keys below are fixed for local development only):
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```bash
+docker run --detach --publish 3900:3900 --name yaptide_garage_local -v "$PWD/garage.toml:/etc/garage.toml:ro" -e GARAGE_RPC_SECRET=fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210 -e GARAGE_DEFAULT_ACCESS_KEY=GK0123456789abcdef01234567 -e GARAGE_DEFAULT_SECRET_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef -e GARAGE_DEFAULT_BUCKET=yaptide-results dxflrs/garage:v2.4.1 /garage server --single-node --default-bucket
+```
+
+</TabItem>
+<TabItem label="Windows (PowerShell)">
+
+```powershell
+docker run --detach --publish 3900:3900 --name yaptide_garage_local -v "${PWD}/garage.toml:/etc/garage.toml:ro" -e GARAGE_RPC_SECRET=fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210 -e GARAGE_DEFAULT_ACCESS_KEY=GK0123456789abcdef01234567 -e GARAGE_DEFAULT_SECRET_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef -e GARAGE_DEFAULT_BUCKET=yaptide-results dxflrs/garage:v2.4.1 /garage server --single-node --default-bucket
+```
+
+</TabItem>
+</Tabs>
+
+Without nginx in front, the browser fetches the pages from Garage itself, so the bucket has to allow the frontend's
+origin (once, after the first start):
+
+```bash
+poetry run python -c "import boto3; boto3.client('s3', endpoint_url='http://127.0.0.1:3900', region_name='garage', aws_access_key_id='GK0123456789abcdef01234567', aws_secret_access_key='0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef').put_bucket_cors(Bucket='yaptide-results', CORSConfiguration={'CORSRules': [{'AllowedOrigins': ['http://localhost:3000', 'http://127.0.0.1:3000'], 'AllowedMethods': ['GET'], 'AllowedHeaders': ['*'], 'ExposeHeaders': ['Content-Length', 'Content-Encoding']}]})"
 ```
 
 ### 4. Setup .env
@@ -193,18 +220,22 @@ Open a third backend terminal and go to the `yaptide/` directory. Run:
 <TabItem label="Linux">
 
 ```bash
-FLASK_USE_CORS=True FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite" CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run flask  --app yaptide.application run --host 0.0.0.0
+RESULTS_S3_BUCKET=yaptide-results RESULTS_S3_ENDPOINT=http://127.0.0.1:3900 RESULTS_S3_PUBLIC_ENDPOINT=http://127.0.0.1:3900 RESULTS_S3_ACCESS_KEY=GK0123456789abcdef01234567 RESULTS_S3_SECRET_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef FLASK_USE_CORS=True FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite" CELERY_BROKER_URL=redis://127.0.0.1:6379/0 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0 poetry run flask  --app yaptide.application run --host 0.0.0.0
 ```
 
 </TabItem>
 <TabItem label="Windows (PowerShell)">
 
 ```powershell
-$env:FLASK_USE_CORS="True"; $env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run flask --app yaptide.application run --host 0.0.0.0
+$env:RESULTS_S3_BUCKET="yaptide-results"; $env:RESULTS_S3_ENDPOINT="http://127.0.0.1:3900"; $env:RESULTS_S3_PUBLIC_ENDPOINT="http://127.0.0.1:3900"; $env:RESULTS_S3_ACCESS_KEY="GK0123456789abcdef01234567"; $env:RESULTS_S3_SECRET_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"; $env:FLASK_USE_CORS="True"; $env:FLASK_SQLALCHEMY_DATABASE_URI="sqlite:///db.sqlite"; $env:CELERY_BROKER_URL="redis://127.0.0.1:6379/0"; $env:CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/0"; poetry run flask --app yaptide.application run --host 0.0.0.0
 ```
 
 </TabItem>
 </Tabs>
+
+**Why the `RESULTS_S3_*` variables?** Flask writes the result pages to the bucket at `RESULTS_S3_ENDPOINT` and hands
+the browser links signed for `RESULTS_S3_PUBLIC_ENDPOINT`; it does not start without them. See
+[Result Storage](/for_developers/backend/result-storage/).
 
 **Why `FLASK_USE_CORS=True`?** During development, the frontend runs on `localhost:3000` and the backend on `localhost:5000`. Without CORS enabled, the browser blocks cross-origin requests.
 

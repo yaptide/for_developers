@@ -5,7 +5,9 @@ description: Simulation results, estimators, inputs, and log file retrieval.
 
 ## Get Results
 
-Retrieve simulation results with optional filtering by estimator and page.
+Retrieve simulation results with optional filtering by estimator and page. Each page comes as **signed links** to
+its objects in the results bucket, not as its values: the browser fetches them through nginx
+(`/yaptide-results/...`), see [Result Storage](/for_developers/backend/result-storage/).
 
 ```http
 GET /results?job_id=abc123-def456
@@ -39,10 +41,12 @@ GET /results?job_id=abc123-def456
                 {
                     "page_number": 1,
                     "name": "Z (Dose)",
-                    "data": {
-                        "values": [0.0, 0.001, 0.015, ...],
-                        "dimensions": [[0.0, 0.5, 1.0, ...]],
-                        "unit": "Gy"
+                    "dimensions": 1,
+                    "format": "zarr-v3",
+                    "url": "https://<backend>/yaptide-results/simulations/17/z_profile_/1/3f2a9c0d1e4b5a67/zarr.json?X-Amz-...",
+                    "files": {
+                        "zarr.json": "https://<backend>/yaptide-results/simulations/17/z_profile_/1/3f2a9c0d1e4b5a67/zarr.json?X-Amz-...",
+                        "c/0": "https://<backend>/yaptide-results/simulations/17/z_profile_/1/3f2a9c0d1e4b5a67/c/0?X-Amz-..."
                     }
                 }
             ]
@@ -67,7 +71,18 @@ GET /results?job_id=abc123-def456&page_numbers=1-3,5
 
 Returns only the specified pages across all estimators.
 
-> **Note:** Result data is stored compressed (zlib) in the database. The API decompresses transparently.
+**A stored page:**
+
+| Field | Description |
+|---|---|
+| `page_number`, `name`, `dimensions` | The page, as kept in the database |
+| `format` | `zarr-v3`: a Zarr v3 array of float32 values in one shard |
+| `files` | Signed link for each object: `zarr.json` (metadata; its `attributes.yaptide_page` is the page as the JSON pages had it, without the values) and `c/0` (the shard) |
+| `url` | The link of `zarr.json` |
+
+The links last 15 minutes; ask `/results` again for new ones. A page without values has no shard, and its `c/0` link
+answers 404, which a Zarr reader takes as the fill value. A page stored before the results bucket and not yet moved
+there (`db_manage copy-pages-to-storage`) still comes as the page itself, with `data.values`.
 
 ---
 
@@ -180,7 +195,10 @@ Log files are useful for debugging failed simulations — they contain the simul
 
 ## Internal: Upload Results
 
-**Worker-facing only.** Simulation workers call this to save results to the database.
+**Worker-facing only.** The merge of a direct simulation and the collect job of a batch simulation call this with
+the merged results. Each page comes with its values; the backend writes it to the results bucket as a Zarr array and
+keeps where it is in the database. Pages stored before for the same estimator and page are replaced, and their objects
+removed. Answers `202` when stored, `500` when the bucket did not take the pages (nothing is kept then).
 
 ```http
 POST /results

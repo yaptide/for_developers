@@ -58,6 +58,14 @@ Quick reference for domain-specific terms that appear across the codebase and do
 **Poetry**
 : Python dependency manager used by the backend and converter. Replaces pip + requirements.txt with `pyproject.toml` + `poetry.lock`.
 
+**Garage**
+: The S3-compatible object storage (`garage` service in `docker-compose.yml`) holding the result pages, in the
+  bucket `yaptide-results`.
+
+**Zarr**
+: A format for chunked, compressed n-dimensional arrays, stored as plain objects (`zarr.json` and chunk files). Each
+  result page is one Zarr v3 array.
+
 **Keycloak**
 : An open-source identity provider. YAPTIDE uses it for SSO authentication, especially for PLGrid HPC access.
 
@@ -94,7 +102,8 @@ Quick reference for domain-specific terms that appear across the codebase and do
 : The process of recording (tallying) physical quantities during particle transport. A scoring definition ties a quantity to a detector.
 
 **Page / Output**
-: A single scored quantity on a single detector. One simulation can produce multiple pages of results.
+: A single scored quantity on a single detector. One simulation can produce multiple pages of results. The backend
+  stores each page as a Zarr v3 array in the results bucket, and `GET /results` hands out signed links to it.
 
 **LET (Linear Energy Transfer)**
 : Energy deposited by a charged particle per unit path length. Typically measured in keV/µm.

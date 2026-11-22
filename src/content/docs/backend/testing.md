@@ -45,10 +45,18 @@ Key differences from production:
 - **Database**: in-memory SQLite (no PostgreSQL required)
 - **Celery broker**: `memory://` (no Redis required)
 - **Celery backend**: `cache+memory://` (no Redis required)
+- **Results bucket**: an in-process S3 mock (moto) started for the test session, bucket `yaptide-results-test`; or a
+  real S3 server, see [Results Bucket](#results-bucket)
 
 ## Fixtures
 
 Fixtures are defined in `tests/conftest.py` and provide the test infrastructure.
+
+### `results_bucket`
+
+Session-wide and automatic: the backend needs a results bucket to start. Without `RESULTS_S3_ENDPOINT` set, it starts
+moto's S3 server on a free local port and points `RESULTS_S3_*` at it; with it set, it uses that server. It creates
+the bucket when missing, and every test starts with no result pages in it (`results_bucket_emptied`).
 
 ### `app`
 
@@ -101,6 +109,9 @@ These fixtures load JSON from `tests/res/` resource files.
 | `test_download_topas.py` | TOPAS binary download from S3 |
 | `test_migrations.py` | Every migration up and down on PostgreSQL, data migrations, `prepare_database` |
 | `test_estimator_matching.py` | Estimators bound to the editor outputs by their result file (`POST /results`, `GET /results`) |
+| `test_result_storage.py` | Result pages written to the bucket as Zarr, signed links in `GET /results`, replaced pages and deleted simulations removed |
+| `test_result_format.py` | The Zarr page writer and reader without zstandard (gzip) and uncompressed |
+| `test_result_pages_admin.py` | `db_manage` copy, clear and move of pages stored before the bucket (SQLite, or PostgreSQL with `TEST_DATABASE_URI`) |
 
 ### Integration Tests
 
@@ -126,6 +137,20 @@ revision, back down and up again, check that the data migrations carry existing 
 docker run -d --rm --name yaptide-test-pg -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=migrations -p 55432:5432 postgres:16-alpine
 TEST_DATABASE_URI=postgresql+psycopg://postgres:pw@localhost:55432/migrations poetry run pytest tests/test_migrations.py
 docker stop yaptide-test-pg
+```
+
+### Results Bucket
+
+The storage tests run against moto by default. To run them, or the whole suite, against a real Garage, as deployed:
+
+```bash
+cd yaptide
+AK=GK$(openssl rand -hex 12); SK=$(openssl rand -hex 32)
+docker run -d --rm --name yaptide-test-garage -p 3900:3900 -v "$PWD/garage.toml:/etc/garage.toml:ro" \
+  -e GARAGE_RPC_SECRET=$(openssl rand -hex 32) -e GARAGE_DEFAULT_ACCESS_KEY=$AK -e GARAGE_DEFAULT_SECRET_KEY=$SK \
+  -e GARAGE_DEFAULT_BUCKET=yaptide-results-test dxflrs/garage:v2.4.1 /garage server --single-node --default-bucket
+RESULTS_S3_ENDPOINT=http://127.0.0.1:3900 RESULTS_S3_ACCESS_KEY=$AK RESULTS_S3_SECRET_KEY=$SK poetry run pytest
+docker stop yaptide-test-garage
 ```
 
 ## Writing New Tests

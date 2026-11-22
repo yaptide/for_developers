@@ -25,7 +25,7 @@ SimulationModel ──< TaskModel (polymorphic)
                       └── BatchTaskModel
 
 SimulationModel ──< InputModel
-SimulationModel ──< EstimatorModel ──< PageModel
+SimulationModel ──< EstimatorModel ──< PageModel ──o PageObjectModel
 SimulationModel ──< LogfilesModel
 
 ClusterModel ──< BatchSimulationModel
@@ -147,7 +147,20 @@ ClusterModel ──< BatchSimulationModel
 | `page_number` | Integer | 0-based page index |
 | `page_name` | String | Descriptive name |
 | `page_dimension` | Integer | Number of dimensions |
-| `compressed_data` | LargeBinary | gzip-compressed result data (axes, values) |
+| `compressed_data` | LargeBinary | Empty for pages in the results bucket. Pages stored before the bucket keep their gzip-compressed JSON (axes, values) here until `db_manage copy-pages-to-storage` and `clear-pages-in-postgres` move them |
+
+**`PageObject`** — where a page is in the results bucket (one row per page at most).
+
+| Column | Type | Description |
+|---|---|---|
+| `page_id` | Integer (PK, FK → Page, cascade) | |
+| `key` | String | Prefix of the page's objects, `simulations/<sim>/<estimator file>/<page>/<revision>/` |
+| `size` | Integer | Size of the page's objects in bytes |
+| `format` | String | `zarr-v3` |
+
+The page's values are only in the bucket, so the `PageObject` migration (`9e2b41c7d5a3`) refuses to downgrade while
+the table has rows: `db_manage move-pages-to-postgres` brings the pages back first. See
+[Result Storage](/for_developers/backend/result-storage/).
 
 **`Logfiles`** — simulation log output.
 
@@ -168,7 +181,8 @@ ClusterModel ──< BatchSimulationModel
 
 ## Data Compression
 
-All large binary fields use gzip compression:
+Result pages are not in the database: they are Zarr arrays in the results bucket, each chunk compressed with zstd
+([Result Storage](/for_developers/backend/result-storage/)). The other large binary fields use gzip compression:
 
 ```python
 from yaptide.persistence.models import compress, decompress
@@ -180,7 +194,7 @@ model.compressed_data = compress(json.dumps(data).encode())
 data = json.loads(decompress(model.compressed_data).decode())
 ```
 
-This reduces storage for large simulation results (estimator pages can be several MB uncompressed).
+This reduces storage for inputs, estimator metadata and logs.
 
 ## Migration Workflow
 
