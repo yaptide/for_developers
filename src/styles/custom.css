@@ -95,6 +95,11 @@ blockquote {
   color: var(--sl-color-text) !important;
 }
 
+.swagger-ui .model-title {
+  color: var(--sl-color-text) !important;
+  font-weight: 600;
+}
+
 /* Expanded block backgrounds */
 .swagger-ui .opblock-body,
 .swagger-ui .opblock-section,
