@@ -81,7 +81,8 @@ a signed link for each object in `files` (`url` is the link of `zarr.json`). See
   working soon after, and a client that needs a page later asks `/results` again.
 - **Links are signed for `BACKEND_EXTERNAL_URL`** (or `RESULTS_S3_PUBLIC_ENDPOINT`), at the path
   `/<bucket>/<key>`. Nginx passes `/yaptide-results/` to Garage with the `Host` header and the path unchanged, since
-  the signature covers both. That route allows only `GET` (and `HEAD`) and adds the CORS headers.
+  the signature covers both. That route allows only `GET` (and `HEAD`), answers a browser's preflight (`OPTIONS`) itself, and adds the CORS
+  headers.
 - **The bucket allows no anonymous access.** Garage publishes no port; only Flask, inside the compose network,
   holds the keys. A request through nginx without a valid signature, or with another method, is refused (`403`).
 
@@ -109,9 +110,9 @@ docker exec yaptide_flask python -m yaptide.admin.db_manage clear-pages-in-postg
 1. **Back up first**: `scripts/backup.sh`, or at least a `pg_dump --format=custom`.
 2. **`copy-pages-to-storage`** converts each page of a finished simulation (completed, failed or canceled) to Zarr,
    as new pages are stored, uploads it and checks every object in the bucket (size and MD5). It only reads the
-   database: the pages are still served from it. The revision of a copy is taken from the page's id and data, so a
-   repeated run finds the copies already made and uploads only what is missing; it can be stopped and repeated at
-   any time. Pages of running simulations are left to the backend, which may replace them; run again after they end.
+   database: the pages are still served from it. The revision of a copy is taken from the page's id and its Zarr
+   objects, so a repeated run finds the copies already made and uploads only what is missing, also after
+   `move-pages-to-postgres`; it can be stopped and repeated at any time. Pages of running simulations are left to the backend, which may replace them; run again after they end.
 3. **`clear-pages-in-postgres --dry-run`** lists any page without a matching copy.
 4. **`clear-pages-in-postgres`** makes the copies the only ones: for each batch whose every page is verified in the
    bucket, in one transaction, it empties `compressed_data` and adds the `PageObject` row. A page the backend
