@@ -24,15 +24,16 @@ YAPTIDE is composed of **three repositories** that work together to provide a co
 │  │                      └─────────────────────────┘ │   │
 │  └──────────────────────┬───────────────────────────┘   │
 └─────────────────────────┼───────────────────────────────┘
-                          │ HTTPS (REST API)
+                          │ HTTPS (REST API, result pages)
 ┌─────────────────────────┼───────────────────────────────┐
 │                    Nginx │ :8443                        │
-│                  ┌───────┴───────┐                      │
-│                  │  Flask API    │ :6000                │
-│                  └───┬───────┬──┘                       │
-│                      │       │                          │
-│           ┌──────────┤       ├──────────┐               │
-│           ▼          ▼       ▼          ▼               │
+│                          ├──── /yaptide-results/ ───┐   │
+│                  ┌───────┴───────┐                  ▼   │
+│                  │  Flask API    │ :6000    ┌──────────┐│
+│                  └───┬───────┬──┘    ──────▶│  Garage  ││
+│                      │       │              │ (S3, the ││
+│           ┌──────────┤       ├──────────┐   │  pages)  ││
+│           ▼          ▼       ▼          ▼   └──────────┘│
 │     ┌──────────┐ ┌───────┐ ┌─────────────────────┐      │
 │     │  Redis   │ │ PgSQL │ │   Celery Workers    │      │
 │     │ (broker) │ │  (DB) │ │                     │      │
@@ -62,12 +63,15 @@ YAPTIDE is composed of **three repositories** that work together to provide a co
 
 ### Backend (`yaptide` repository)
 
-The backend is a **Flask** API server with **Celery** for async task execution and **PostgreSQL** for persistence.
+The backend is a **Flask** API server with **Celery** for async task execution, **PostgreSQL** for persistence and
+an S3 bucket (**Garage**) for result pages.
 
 - **REST API** — Handles authentication, job submission, status polling, and result retrieval.
 - **Simulation Worker** — Celery worker that runs simulator binaries (SHIELD-HIT12A, FLUKA) in temporary directories, monitors progress, and posts updates back to Flask.
 - **Helper Worker** — Celery worker for HPC batch job submission via SSH (PLGrid/Slurm) and cleanup tasks.
-- **Nginx** — Reverse proxy with TLS termination.
+- **Garage** — S3-compatible object storage holding the result pages as Zarr arrays; Flask writes them, the browser
+  reads them with signed links. See [Result Storage](/for_developers/backend/result-storage/).
+- **Nginx** — Reverse proxy with TLS termination; passes `/yaptide-results/` to Garage.
 
 ### UI (`ui` repository)
 

@@ -74,6 +74,11 @@ scripts/start_with_docker_develop.ps1
 </TabItem>
 </Tabs>
 
+On the first start the scripts also write the keys of the results bucket (Garage, which holds the result pages)
+into `.env`: `RESULTS_S3_ACCESS_KEY`, `RESULTS_S3_SECRET_KEY` and `GARAGE_RPC_SECRET`. Keep them; Garage does not
+start with other keys once it has started with these. Running `docker compose up` yourself needs them in `.env`
+first, see [Docker Deployment → Result Storage](/for_developers/backend/docker-deployment/#result-storage).
+
 There's two startup modes. 
 The fast mode has custom healthcheck frequency, but requires Docker Engine v25. 
 The slow mode is compatible with older Docker versions.
@@ -132,7 +137,7 @@ Open **http://localhost** and log in using credentials you created (username: `a
 docker compose down
 ```
 
-To also delete all data (PostgreSQL volume, simulator cache):
+To also delete all data (PostgreSQL volume, result pages in Garage, simulator cache):
 ```bash
 docker compose down -v
 ```
@@ -159,7 +164,8 @@ Or use a GUI tool like DataGrip or pgAdmin.
 
 | Container                   | Port                      | Purpose          |
 | --------------------------- | ------------------------- | ---------------- |
-| `yaptide_nginx`             | 5000 (HTTP), 8443 (HTTPS) | Reverse proxy    |
+| `yaptide_nginx`             | 5000 (HTTP), 8443 (HTTPS) | Reverse proxy, also for the result pages (`/yaptide-results/`) |
+| `yaptide_garage`            | 3900 (internal)           | Results bucket (S3) |
 | `yaptide_flask`             | 6000 (internal)           | Flask API        |
 | `yaptide_postgresql`        | 5432                      | Database         |
 | `yaptide_redis`             | 6379 (internal)           | Celery broker    |

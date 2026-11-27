@@ -3,13 +3,14 @@ title: Docker Deployment
 description: Running the YAPTIDE backend with Docker Compose.
 ---
 
-The backend deployment uses **Docker Compose** with 6 services. This is the recommended way to run the full stack.
+The backend deployment uses **Docker Compose** with 7 services. This is the recommended way to run the full stack.
 
 ## Services
 
 ```yaml
 # Simplified view of docker-compose.yml
 services:
+  garage:         # S3 bucket for the result pages
   redis:          # Celery broker + result backend
   postgresql:     # Primary database
   yaptide_flask:  # Flask API server (gunicorn)
@@ -22,6 +23,7 @@ services:
 
 | Service | Image | Port | Role |
 |---|---|---|---|
+| `garage` | `dxflrs/garage:v2.4.1` | 3900 (internal) | S3 object storage for result pages, bucket `yaptide-results`, persisted via named volumes |
 | `redis` | `redis:8-alpine` | 6379 (internal) | Celery message broker and result backend |
 | `postgresql` | `postgres:16-alpine` | 5432 (internal) | Primary database, persisted via named volume |
 | `yaptide_flask` | `Dockerfile-flask` | 6000 (internal) | Flask API server under gunicorn, migrates the database on start |
@@ -50,6 +52,23 @@ progress finish during a redeploy.
 Nginx resolves `yaptide_flask` through Docker's DNS on each request (cached for 10 s), so a restarted Flask
 container is reached at its new address without reloading nginx.
 
+### Result Storage
+
+Result pages live in the `yaptide-results` bucket of the `garage` service (single node, configured by `garage.toml`),
+see [Result Storage](/for_developers/backend/result-storage/). Garage creates the bucket and its key on the first
+start from three values that must be in `.env` (compose refuses to start without them):
+
+```bash
+echo "RESULTS_S3_ACCESS_KEY=GK$(openssl rand -hex 12)" >> .env
+echo "RESULTS_S3_SECRET_KEY=$(openssl rand -hex 32)" >> .env
+echo "GARAGE_RPC_SECRET=$(openssl rand -hex 32)" >> .env
+```
+
+Keep them: the key pair is fixed after the first start, and a new secret for the same key id stops Garage from
+starting. Garage publishes no port. Flask reaches it inside the compose network (`http://garage:3900`), and the
+browser reaches it through nginx at `/yaptide-results/` (GET only) with links that Flask signs for
+`BACKEND_EXTERNAL_URL`. That variable must therefore be the address the browser reaches nginx at.
+
 ### Exposed Ports
 
 | Port | Protocol | Service |
@@ -57,10 +76,16 @@ container is reached at its new address without reloading nginx.
 | `5000` | HTTP | Nginx → Flask API |
 | `8443` | HTTPS | Nginx → Flask API (TLS) |
 
+Both ports also serve `/yaptide-results/`, the result pages in Garage.
+
 ## Quick Start
 
 ```bash
 cd yaptide
+# once: the keys of the results bucket, see Result Storage above
+echo "RESULTS_S3_ACCESS_KEY=GK$(openssl rand -hex 12)" >> .env
+echo "RESULTS_S3_SECRET_KEY=$(openssl rand -hex 32)" >> .env
+echo "GARAGE_RPC_SECRET=$(openssl rand -hex 32)" >> .env
 docker compose up --build -d
 ```
 
@@ -133,13 +158,27 @@ Set these in a `.env` file in the `yaptide/` root or pass them via Docker:
 | `CELERY_BROKER_URL` | `redis://redis:6379/0` | Redis broker URL |
 | `CELERY_RESULT_BACKEND` | `redis://redis:6379/0` | Redis result backend |
 | `BACKEND_INTERNAL_URL` | `http://yaptide_flask:6000` | Internal URL for worker → Flask |
-| `BACKEND_EXTERNAL_URL` | `https://localhost:8443` | Public-facing URL |
+| `BACKEND_EXTERNAL_URL` | `https://localhost:8443` | Public-facing URL; signed links to result pages point here |
 | `MAX_CORES` | (all) | CPU limit for simulation worker |
 | `LOG_LEVEL_ROOT` | `INFO` | Logging verbosity |
 | `YAPTIDE_TOKEN_SECRET` | (generated at start) | Secret for access tokens and simulation update keys, shared by all gunicorn workers |
 | `YAPTIDE_REFRESH_TOKEN_SECRET` | (generated at start) | Secret for refresh tokens, shared by all gunicorn workers |
 | `GUNICORN_WORKERS` | (sized to the container) | Number of gunicorn workers; above 32, raise PostgreSQL's `max_connections` to match |
 | `GUNICORN_TIMEOUT` | `300` | Seconds a worker may spend on one request (large `/results` uploads) |
+
+### Results Bucket
+
+| Variable | Default | Description |
+|---|---|---|
+| `RESULTS_S3_ACCESS_KEY` | (required) | Key id of the bucket, `GK` + 24 hex characters; Garage creates it on the first start |
+| `RESULTS_S3_SECRET_KEY` | (required) | Its secret, 64 hex characters |
+| `GARAGE_RPC_SECRET` | (required) | Garage's internal secret, 64 hex characters |
+| `RESULTS_S3_BUCKET` | `yaptide-results` | Set by `docker-compose.yml` |
+| `RESULTS_S3_ENDPOINT` | `http://garage:3900` | Set by `docker-compose.yml`; where Flask writes the pages |
+| `RESULTS_S3_PUBLIC_ENDPOINT` | `BACKEND_EXTERNAL_URL` | Optional: another address for the browser's signed links |
+| `RESULTS_S3_REGION` | `garage` | Optional: the region of another S3 server |
+
+Flask does not start without the bucket settings.
 
 ### Authentication
 
@@ -180,9 +219,13 @@ For production, replace the self-signed certificates with real ones:
 
 ## Volume Persistence
 
-The PostgreSQL data is stored in a **named Docker volume** (`postgres_data`). This survives `docker compose down` but is removed with `docker compose down -v`.
+The PostgreSQL data is stored in a **named Docker volume** (`postgres_data`), and the result pages in two
+(`garage_meta`, `garage_data`). They survive `docker compose down` but are removed with `docker compose down -v`.
 
-> To completely reset the database: `docker compose down -v && docker compose up --build -d`
+> To completely reset the database and the results: `docker compose down -v && docker compose up --build -d`
+
+`scripts/backup.sh` (see the backend's `README.md`) sends a `pg_dump` and a mirror of the bucket to a second S3
+server, and restores them.
 
 ## Container Images on GHCR
 

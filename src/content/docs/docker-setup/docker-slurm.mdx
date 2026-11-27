@@ -23,3 +23,7 @@ gives you hot-reload — no container rebuilds on every change.
 :::caution[Work in Progress]
   This page is not yet complete — we are still working on the SLURM integration and will update this guide once it's ready. In the meantime, see the [Docker — Celery](/for_developers/docker-setup/docker-celery/) guide for the Celery setup.
 :::
+
+The Docker stack is the same as in the [Docker — Celery](/for_developers/docker-setup/docker-celery/) guide,
+including the `garage` service holding the result pages; its keys must be in `.env` before the first start, see
+[Docker Deployment → Result Storage](/for_developers/backend/docker-deployment/#result-storage).

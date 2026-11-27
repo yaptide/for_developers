@@ -894,6 +894,7 @@ paths:
         the response will include results only for the specified estimator. If no `estimator_name` is provided,
         the response will include results for all estimators associated with the job. Additionally, you can
         specify pages using the `page_number` or `page_numbers` parameter to limit the response to specific pages.
+        Pages come as signed links to the results bucket, which the client fetches through nginx (/yaptide-results/).
       parameters:
         - in: query
           name: job_id
@@ -1377,9 +1378,33 @@ components:
         task_state:
           type: string
           enum: [PENDING, RUNNING, COMPLETED, FAILED]
-    Page: 
+    Page:
       type: object
-      description: Page object
+      description: A result page in the results bucket, as signed links to its objects (a Zarr v3 array). A page
+        stored before the bucket and not moved there yet comes as the page itself, with its values in data.values.
+      properties:
+        page_number:
+          type: integer
+        name:
+          type: string
+        dimensions:
+          type: integer
+        format:
+          type: string
+          enum: [zarr-v3]
+          description: How the page is stored
+        url:
+          type: string
+          description: Signed link of the page's zarr.json, valid 15 minutes
+        files:
+          type: object
+          description: Signed link of each of the page's objects, valid 15 minutes; c/0 answers 404 for a page without
+            values
+          properties:
+            zarr.json:
+              type: string
+            c/0:
+              type: string
     Estimator:
       type: object
       description: Estimator object includes estimator's name, associated metadata, and list of pages.

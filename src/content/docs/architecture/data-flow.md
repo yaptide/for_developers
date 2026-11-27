@@ -76,7 +76,8 @@ POST /jobs/direct
    - POSTs status updates to `POST /tasks` (primaries completed, estimated time)
 4. When all N tasks complete, a **merge task** (`get_job_results`) runs:
    - Averages estimator results across all tasks
-   - Compresses and stores results in the database (`EstimatorModel` → `PageModel`)
+   - POSTs them to `POST /results`, which writes each page to the results bucket as a Zarr array and records it in
+     the database (`EstimatorModel` → `PageModel` → `PageObjectModel`)
 5. Job state transitions: `PENDING → RUNNING → MERGING_QUEUED → MERGING_RUNNING → COMPLETED`
 
 **Polling**: The UI polls `GET /jobs/direct?job_id=<id>` at intervals to check status and fetch partial progress.
@@ -97,7 +98,8 @@ POST /jobs/batch
    - Uploads watcher and data-sender scripts
    - Submits a **Slurm array job** (`sbatch`) + a collect job
 3. The cluster's **watcher script** monitors each array task and POSTs progress back to the YAPTIDE backend.
-4. When all array tasks finish, the **collect job** gathers results and POSTs them to `POST /results`.
+4. When all array tasks finish, the **collect job** gathers results and POSTs them to `POST /results`, which stores
+   them as for direct execution.
 
 **Polling**: The UI polls `GET /jobs/batch?job_id=<id>`. The backend also checks cluster status via `sacct` over SSH.
 
@@ -122,10 +124,14 @@ Regardless of the execution path, results follow the same structure:
 - **Estimators** — named result containers (e.g., `detector_dose`, `mesh_fluence`)
 - **Pages** — individual scoring dimensions within an estimator (e.g., energy bins, spatial slices)
 
-Each page contains:
-- `page_name` — descriptive name
-- `page_dimension` — number of dimensions
-- `compressed_data` — gzip-compressed JSON with axes, values, and metadata
+Each page is a Zarr v3 array in the results bucket: its values (float32) in one shard, and its axes, unit and
+metadata as attributes of its `zarr.json`. The database keeps the page's `page_name`, `page_dimension` and where it is
+stored (`PageObjectModel`).
+
+`GET /results` answers with **signed links** to each page's objects, never with the values. The browser fetches them
+from nginx (`/yaptide-results/`), which passes them to the bucket; result data does not go through Flask. See
+[Result Storage](/for_developers/backend/result-storage/) and
+[Results Loading](/for_developers/frontend/results-loading/).
 
 The UI renders results using **JSRoot** (CERN ROOT's JavaScript library):
 - 1D histograms (e.g., Bragg peak depth-dose curves)
@@ -135,13 +141,14 @@ The UI renders results using **JSRoot** (CERN ROOT's JavaScript library):
 
 ## Data Persistence
 
-All simulation data is stored in PostgreSQL with gzip compression.
+Simulation data is stored in PostgreSQL with gzip compression, except the result pages, which are kept in the S3
+bucket.
 
 | Data | Storage |
 |---|---|
 | Input files (JSON or raw) | `InputModel.compressed_data` |
 | Estimator metadata | `EstimatorModel` (name, filename) |
-| Result pages | `PageModel.compressed_data` |
+| Result pages | Zarr arrays in the results bucket; `PageModel` + `PageObjectModel` (key, size, format) |
 | Simulation logs | `LogfilesModel.compressed_data` |
 | Job state and metadata | `SimulationModel` + `TaskModel` |
 

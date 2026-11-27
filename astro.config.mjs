@@ -121,6 +121,7 @@ export default defineConfig({
             { label: "Overview", slug: "backend/overview" },
             { label: "API Reference", slug: "backend/api-reference" },
             { label: "Database", slug: "backend/database" },
+            { label: "Result Storage", slug: "backend/result-storage" },
             {
               label: "Simulation Lifecycle",
               slug: "backend/simulation-lifecycle",
