@@ -49,32 +49,21 @@ Uses `ky` (a fetch wrapper) with:
 
 ### Polling Loop
 
-```typescript
-// Simplified polling logic
-async function pollJobStatus(jobId: string) {
-  while (true) {
-    const status = await authKy.get(`jobs/direct?job_id=${jobId}`).json();
+The Simulations tab polls the status of every simulation on the current page (`SimulationsGridHelpers.ts`):
 
-    if (status.jobState === 'COMPLETED') {
-      const results = await authKy.get(`results?job_id=${jobId}`).json();
-      displayResults(results);
-      return;
-    }
+- Every **1.5 s** while any simulation is unfinished, every **10 s** once all have settled.
+- A hidden browser tab does not poll. The next tick after the tab is shown again catches up.
+- A status is requested with `GET /jobs/direct?job_id=…` or `GET /jobs/batch?job_id=…`.
 
-    if (status.jobState === 'FAILED' || status.jobState === 'CANCELED') {
-      showError(status);
-      return;
-    }
+Progress and the "primaries" and "ntask" chips on the simulation card come from `taskTotals(status)` (`src/util/taskTotals.ts`). It reads the server's `jobTasksSummary` (number of tasks, tasks per state, requested and simulated primaries) when the status has one, and otherwise sums the task list `jobTasksStatus`. Simulations run in the browser (Geant4) only have the task list. Read task progress through `taskTotals()`, never from `jobTasksStatus` directly, because a status may carry only the summary.
 
-    // Update progress bars
-    updateTaskProgress(status.jobTasksStatus);
+When the simulation the user just started completes, its results open once. A finished run is remembered, so reopening the Simulations tab does not jump back to its results.
 
-    await sleep(getPollingInterval());
-  }
-}
-```
+When the editor is connected to the backend, `useUpdateCurrentSimulationEffect` looks for the completed simulation whose input hash equals the editor's, or the hash of the input the editor was loaded from (kept until the first edit, because serializing a loaded editor again can give another hash). It attaches that simulation's results to the editor, where the Save dialog can include them. A failed request skips that simulation, and an older search that ends late does not overwrite a newer one.
 
-The polling interval increases over time to reduce server load on long-running simulations.
+### Matching results to editor outputs
+
+The results of each estimator are linked to the scoring output in the editor that produced them (`recreateRefsInResults` in `RemoteWorkerSimulationService.ts`). The backend sends each estimator's `output_uuid` with the results, and the UI matches it to `scoringManager.outputs[].uuid`. Results without it, such as simulations stored before the backend sent it, are matched by output name. An estimator that matches no output gets no reference and is logged as an error.
 
 ### Result Caching
 
