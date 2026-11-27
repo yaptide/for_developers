@@ -59,7 +59,7 @@ Progress and the "primaries" and "ntask" chips on the simulation card come from 
 
 When the simulation the user just started completes, its results open once. A finished run is remembered, so reopening the Simulations tab does not jump back to its results.
 
-When the editor is connected to the backend, `useUpdateCurrentSimulationEffect` looks for the completed simulation whose input hash equals the editor's, and loads its results into the editor. A failed request skips that simulation, and an older search that ends late does not overwrite a newer one.
+When the editor is connected to the backend, `useUpdateCurrentSimulationEffect` looks for the completed simulation whose input hash equals the editor's, or the hash of the input the editor was loaded from (kept until the first edit, because serializing a loaded editor again can give another hash). It attaches that simulation's results to the editor, where the Save dialog can include them. A failed request skips that simulation, and an older search that ends late does not overwrite a newer one.
 
 ### Matching results to editor outputs
 
